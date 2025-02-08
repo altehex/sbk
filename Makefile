@@ -31,5 +31,5 @@ clean:
 	rm -rf build
 	rm -f *~
 	rm -f examples/*~
-	rm -f src/sbk/*~
-	rm -f include/*~
+	rm -f src/*~
+	rm -f include/sbk/*~

@@ -1,8 +1,0 @@
-#ifndef __SBK_MACRO_H
-#define __SBK_MACRO_H
-
-
-#define __PACKED __attribute__((packed))
-
-
-#endif // !__SBK_MACRO_H
