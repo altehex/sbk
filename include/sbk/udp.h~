@@ -1,0 +1,41 @@
+#ifndef __SBK_UDP_H
+#define __SBK_UDP_H
+
+
+#include <netinet/in.h>
+#include <sys/socket.h>
+
+
+#define SBK_UDP_LISTEN_PORT     8090
+#define SBK_UDP_LOW_LEVEL_PORT  8007
+
+typedef enum {
+	SBK_UDP_HIGH_LEVEL_CONN,
+	SBK_UDP_LOW_LEVEL_CONN
+} SbkConnType;
+
+#define SBK_OCTETS_TO_ADDR(a, b, c, d) \
+	(   ( (d&0xFF) << 24 ) \
+      | ( (c&0xFF) << 16 ) \
+      | ( (b&0xFF) << 8 )  \
+      |   (a&0xFF)         )
+
+#define SBK_MCU_ADDR  ((in_addr_t) SBK_OCTETS_TO_ADDR(192,168,123,10))
+#define SBK_PI_ADDR   ((in_addr_t) SBK_OCTETS_TO_ADDR(192,168,123,161))
+
+
+extern struct sockaddr_in sbkMcuAddr, sbkPiAddr;
+
+
+typedef struct SbkSocket {
+	int                 sockfd;
+	struct sockaddr_in  endpoint;
+} SbkConnection;
+
+
+int sbk_udp_open(const in_addr_t addr, const u_short port, SbkConnType type, SbkConnection *sock);
+ssize_t sbk_udp_send(const SbkConnection * sock, const uint8_t *data, const unsigned int size);
+int sbk_udp_recv(const SbkConnection *sock);
+
+
+#endif // !__SBK_UDP_H
