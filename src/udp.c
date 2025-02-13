@@ -50,18 +50,20 @@ sbk_udp_open(const u_short   fromPort,
 	conn->from.sin_family      = AF_INET;
 	
 	// Set up message queue
-	qLen = queueLength ? queueLength : SBK_UDP_MSG_QUEUE_LENGTH;
-	qp = (SbkMsgQueue *) malloc(sizeof(SbkMsgQueue));
+	if (queue) {
+		qLen = queueLength ? queueLength : SBK_UDP_MSG_QUEUE_LENGTH;
+		qp = (SbkMsgQueue *) malloc(sizeof(SbkMsgQueue));
 
-	qp->length    = qLen;
-	qp->msgSize   = msgSize;
-	qp->head      = (uint8_t *) malloc(msgSize*qLen);
-	qp->offset    = 0;
-	qp->free      = 0;
-	qp->lock      = (atomic_flag) {false};
-	qp->available = false;
+		qp->length    = qLen;
+		qp->msgSize   = msgSize;
+		qp->head      = (uint8_t *) malloc(msgSize*qLen);
+		qp->offset    = 0;
+		qp->free      = 0;
+		qp->lock      = (atomic_flag) {false};
+		qp->available = false;
 
-	(*queue) = qp;
+		(*queue) = qp;
+	}
 	
 	// Initialize the connecion by sending an empty command
 	memset(emptyMsg, 0, msgSize);
@@ -73,11 +75,14 @@ sbk_udp_open(const u_short   fromPort,
 void
 sbk_udp_close(SbkConnection  *conn,
 			  SbkMsgQueue    *queue)
-{
-	free(queue->head);
-	free(queue);
+{	
 	close(conn->recvfd);
 	close(conn->sendfd);
+	
+	if (queue) {
+		free(queue->head);
+		free(queue);
+	}
 }
 
 

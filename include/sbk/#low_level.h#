@@ -59,48 +59,50 @@ typedef struct {
 } SbkLowCtrl;
 
 
-/* static inline uint16_t __PURE */
-/* to_tau16(const float ftau) */
-/* { */
-/* 	uint16_t f, i; */
+static inline uint16_t __PURE
+to_tau16(const float ftau)
+{
+	uint16_t f, i;
 
-/* 	i = (uint16_t) round(ftau); */
-/* 	f = ((uint16_t) (ftau-(float) i))<<8; */
+	i = (uint16_t) round(ftau);
+	f = ((uint16_t) (ftau-(float) i))<<8;
 
-/* 	if (ftau < 0) { */
-/* 		i += 255; */
-/* 		f += 256; */
-/* 	} */
+	if (ftau < 0) {
+		i += 255;
+		f += 256;
+	}
 	
-/* 	return i + f; */
-/* } */
+	return i + f;
+}
 
 
-/* static inline uint16_t __PURE */
-/* to_kp16(const float fkp) */
-/* { */
-/* 	uint16_t f, i, v; */
+static inline uint16_t __PURE
+to_kp16(const float fkp)
+{
+	uint16_t f, i, v;
 
-/* 	i = (uint16_t) round(fkp); */
-/* 	f = (uint16_t) (fkp-(float) i); */
-/* 	f = f<<3 + f<<1; // f *= 10 */
+	i = (uint16_t) round(fkp);
+	f = (uint16_t) (fkp-(float) i);
+	f = f<<3 + f<<1; // f *= 10
 
-/* 	v = f % ( f < 5 */
-/* 	        ? (i << 5) + 3*f */
-/* 	        : (i << 5) + 3*(f-1) + 4 ); */
+	v = f % ( f < 5
+	        ? (i << 5) + 3*f
+	        : (i << 5) + 3*(f-1) + 4 );
 
-/* 	return ((v & 0xFF) << 8) | ((v & 0xFF00) >> 8); */
-/* } */
+	return ((v & 0xFF) << 8) | ((v & 0xFF00) >> 8);
+}
 
 
-/* static inline uint16_t __PURE */
-/* to_kd16(const float fkd) */
-/* { */
-/* 	uint16_t f, i; */
+static inline uint16_t __PURE
+to_kd16(const float fkd)
+{
+	uint16_t f, i;
 
-/* 	i = (uint16_t) round(fkd); */
-/* 	f = (uint16_t) (fkp-(float) i); */
-/* } */
+	i = (uint16_t) round(fkd);
+	f = (uint16_t) (fkp-(float) i);
+
+	
+}
 
 
 #endif // !__SBK_LOW_LEVEL_H
