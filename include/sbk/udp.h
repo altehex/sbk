@@ -22,8 +22,10 @@ typedef enum {
       | ( (b&0xFF) << 8 )  \
       |   (a&0xFF)         )
 
-#define SBK_MCU_ADDR  ((in_addr_t) SBK_OCTETS_TO_ADDR(192,168,123,10))
-#define SBK_PI_ADDR   ((in_addr_t) SBK_OCTETS_TO_ADDR(192,168,123,161))
+#define SBK_MCU_ADDR         ((in_addr_t) SBK_OCTETS_TO_ADDR(192,168,123,10))
+#define SBK_PI_ADDR          ((in_addr_t) SBK_OCTETS_TO_ADDR(192,168,123,161))
+#define SBK_WIFI_LISTEN_IP   ((in_addr_t) SBK_OCTETS_TO_ADDR(192,168,12,14))
+#define SBK_WIRED_LISTEN_IP  ((in_addr_t) SBK_OCTETS_TO_ADDR(192,168,123,16))
 
 
 extern struct sockaddr_in sbkMcuAddr, sbkPiAddr;
@@ -31,7 +33,7 @@ extern struct sockaddr_in sbkMcuAddr, sbkPiAddr;
 
 typedef struct {
 	int                 sendfd, recvfd;
-	struct sockaddr_in  to, from;
+	struct sockaddr_in  send, recv;
 } SbkConnection;
 
 
@@ -46,7 +48,8 @@ typedef struct {
 } SbkMsgQueue;
 
 
-ssize_t sbk_udp_open(const u_short port, SbkConnType type, const ssize_t queueSize, SbkConnection *sock, SbkMsgQueue **queueCtrl);
+ssize_t
+sbk_udp_open(const u_short recvPort, const in_addr_t recvAddr, SbkConnType type, const ssize_t queueLength, SbkConnection *conn, SbkMsgQueue **queue);
 void sbk_udp_close(SbkConnection *conn, SbkMsgQueue *queue);
 ssize_t sbk_udp_send(const SbkConnection * sock, const uint8_t *data, const unsigned int size);
 int sbk_udp_get_msgs(SbkMsgQueue *queue, void *, const ssize_t);

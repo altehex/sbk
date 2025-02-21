@@ -3,53 +3,107 @@
 #include <sbk/high_level.h>
 #include <sbk/low_level.h>
 #include <sbk/macro.h>
+#include <sbk/syncio.h>
 
+#include <errno.h>
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <arpa/inet.h>
 #include <sys/socket.h>
 
 
+void
+__SBK_debug_udp_print_conn(const int fd,
+						   struct sockaddr_in  *addrOut)
+{
+	char addrStr[INET_ADDRSTRLEN];
+
+	inet_ntop(AF_INET, &(addrOut->sin_addr),
+			  addrStr, INET_ADDRSTRLEN); 
+
+	sbk_sync_printf("-- sockfd: %ld\n"
+			   "-- address: %s:%d\n",
+			   fd, addrStr, ntohs(addrOut->sin_port));
+}
+
+
+int
+__SBK_setup_udp_socket(const in_addr_t     addr,
+					   struct sockaddr_in  *addrOut,
+					   const u_short       port)
+{
+	int   fd;
+	char  addrStr[INET_ADDRSTRLEN];
+	
+	fd = socket(AF_INET, SOCK_DGRAM, 0);
+
+	if (fd == -1) {
+		sbk_sync_printf("!! Bad socket\n");
+		return -1;
+	}
+
+	addrOut->sin_addr.s_addr = addr;
+	addrOut->sin_port        = htons(port);
+	addrOut->sin_family      = AF_INET;
+	
+	inet_ntop(AF_INET, &(addrOut->sin_addr),
+			  addrStr, INET_ADDRSTRLEN); 
+
+	if (connect(fd, (struct sockaddr *) addrOut,
+				sizeof(struct sockaddr_in)) == -1) {
+		sbk_sync_printf("!! Failed to connect to %s:%d\n"
+				   "!! errno: %d\n",
+				   addrStr, port,
+				   errno);
+		return -1;
+	}
+	
+#ifdef DEBUG
+	__SBK_debug_udp_print_conn(fd, addrOut);
+#endif
+
+	return fd;
+}
+
 ssize_t
-sbk_udp_open(const u_short   fromPort,
-			 SbkConnType     type,
-			 const ssize_t   queueLength,
-			 SbkConnection   *conn,
-			 SbkMsgQueue     **queue)
+sbk_udp_open(const u_short    recvPort,
+			 const in_addr_t  recvAddr,
+			 SbkConnType      type,
+			 const ssize_t    queueLength,
+			 SbkConnection    *conn,
+			 SbkMsgQueue      **queue)
 {
 	SbkMsgQueue  *qp;
 	uint8_t      emptyMsg[sizeof(SbkLowCtrl)];
-	u_short      toPort;
-	int          msgSize, qLen;
-	in_addr_t    addr;
+	u_short      sendPort;
+	int          msgSize, qLen, sendfd, recvfd;
+	in_addr_t    sendAddr;
 
 	if (type == SBK_UDP_LOW_LEVEL_CONN) {
-		msgSize = sizeof(SbkLowCtrl);
-		toPort  = SBK_UDP_LOW_LEVEL_PORT;
-		addr    = SBK_MCU_ADDR;
+		msgSize  = sizeof(SbkLowCtrl);
+		sendPort = SBK_UDP_LOW_LEVEL_PORT;
+		sendAddr = SBK_MCU_ADDR;
 	} else {
-		msgSize = sizeof(SbkHighCtrl);
-		toPort  = SBK_UDP_HIGH_LEVEL_PORT;
-		addr    = SBK_PI_ADDR;
+		msgSize  = sizeof(SbkHighCtrl);
+		sendPort = SBK_UDP_HIGH_LEVEL_PORT;
+		sendAddr = SBK_PI_ADDR;
 	}
-	
+
 	// Set up SbkConnection instance
-	conn->sendfd = socket(AF_INET, SOCK_DGRAM, 0);
+	sendfd = __SBK_setup_udp_socket(sendAddr, &(conn->send), sendPort);
+	recvfd = __SBK_setup_udp_socket(recvAddr, &(conn->recv), recvPort);
 
-	conn->to.sin_addr.s_addr = addr;
-	conn->to.sin_port        = htons(toPort);
-	conn->to.sin_family      = AF_INET;
+	if (sendfd == -1 || recvfd == -1)
+		return -1;
 
-	conn->recvfd = socket(AF_INET, SOCK_DGRAM, 0);;
-
-	conn->from.sin_addr.s_addr = addr;
-	conn->from.sin_port        = htons(fromPort);
-	conn->from.sin_family      = AF_INET;
+	conn->sendfd = sendfd;
+	conn->recvfd = recvfd;
 	
-	// Set up message queue
+	// Set up message queue if needed
 	if (queue) {
 		qLen = queueLength ? queueLength : SBK_UDP_MSG_QUEUE_LENGTH;
 		qp = (SbkMsgQueue *) malloc(sizeof(SbkMsgQueue));
@@ -67,6 +121,12 @@ sbk_udp_open(const u_short   fromPort,
 	
 	// Initialize the connecion by sending an empty command
 	memset(emptyMsg, 0, msgSize);
+
+#ifdef DEBUG
+	ssize_t bytesSent = sbk_udp_send(conn, emptyMsg, msgSize);
+	sbk_sync_puts("-- Iniitalized connection");
+	return bytesSent;
+#endif
 	
 	return sbk_udp_send(conn, emptyMsg, msgSize);
 }
@@ -91,8 +151,18 @@ sbk_udp_send(const SbkConnection  *conn,
 			 const uint8_t        *data,
 			 const unsigned int   size)
 {
-	return sendto(conn->sendfd, data, size,
-		          0, (struct sockaddr *) &(conn->to),
+#ifdef DEBUG
+	ssize_t bytesSent = sendto(conn->sendfd, data, size-1, 0,
+							   (struct sockaddr *) &(conn->send),
+							   sizeof(struct sockaddr_in));
+	__SBK_debug_udp_print_conn(conn->sendfd, &(conn->send));
+	sbk_sync_printf("-- Bytes sent: %ld (intended: %ld)\n",
+					bytesSent, size);
+	return bytesSent;
+#endif
+	
+	return sendto(conn->sendfd, data, size, 0,
+				  (struct sockaddr *) &(conn->send),
 		          sizeof(struct sockaddr_in));
 }
 
@@ -168,8 +238,16 @@ sbk_udp_recv(const SbkConnection  *conn,
 			 void                 *buf,
 			 const ssize_t        recvSize)
 {
+#ifdef DEBUG
+	ssize_t recvBytes = recvfrom(conn->recvfd, buf, recvSize,
+								 0, (struct sockaddr *) &(conn->recv), 0);
+
+	sbk_sync_printf("-- Received bytes: %ld\n", recvBytes);
+	return recvBytes;
+#endif
+	
 	return recvfrom(conn->recvfd, buf, recvSize,
-					0, (struct sockaddr *) &(conn->from), 0);
+					0, (struct sockaddr *) &(conn->recv), 0);
 }
 
 

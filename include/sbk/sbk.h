@@ -7,6 +7,7 @@
 #include <sbk/low_level.h>
 #include <sbk/joint.h>
 #include <sbk/pos.h>
+#include <sbk/syncio.h>
 #include <sbk/udp.h>
 
 

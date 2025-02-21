@@ -1,34 +1,41 @@
 #include <sbk/sbk.h>
 
 #include <pthread.h>
-#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <arpa/inet.h>
 #include <sys/syscall.h>
 
 
-atomic_flag stdoutLock = ATOMIC_FLAG_INIT;
+// #define MSG_QUEUE
 
 
 typedef struct {
+#ifdef MSG_QUEUE
 	SbkMsgQueue *queue;
+#else
+	SbkConnection *conn;
+#endif
 } FbArgs;
 
 void *
 feedback(void *args)
 {	
-	int          time;
-	SbkMsgQueue  *queue;
-	SbkHighFb    fb[25];
-	ssize_t      msgRead;
+	int time;
 
-	queue = ((FbArgs *) args)->queue;
-
+#ifdef MSG_QUEUE
+	ssize_t     msgRead;
+	SbkHighFb   fb[25];
+	SbkMsgQueue *queue = ((FbArgs *) args)->queue;
+#else
+	SbkHighFb     fb;
+	SbkConnection *conn = ((FbArgs*) args)->conn;
+#endif
+	
 	time = 0;
 	
 	while (1) {
+#ifdef MSG_QUEUE
 		msgRead = sbk_udp_try_get_msgs(queue, fb, 25);
 		
 		for (int i = 0; i < msgRead; ++i) {
@@ -36,19 +43,27 @@ feedback(void *args)
 			++time;
 
 			if (time%2000 == 0)
-				if ( ! atomic_flag_test_and_set_explicit(
-						   &stdoutLock, memory_order_acquire)) {
-					printf("[ FB(%ld):%d ] Status:\n"
-						   "\tSN:  %d%d\n"
-						   "\tVer: %d%d\n",
-						   syscall(__NR_gettid), time,
-						   fb[0].serialNumber[0], fb[0].serialNumber[1],
-						   fb[0].version[0], fb[0].version[1]);
-					
-					atomic_flag_clear_explicit(&stdoutLock,
-											   memory_order_release);
-				}
+					sbk_sync_printf("[ FB(%ld):%d ] Status:\n"
+							   "\tSN:  %d%d\n"
+							   "\tVer: %d%d\n",
+							   syscall(__NR_gettid), time,
+							   fb[0].serialNumber[0], fb[0].serialNumber[1],
+							   fb[0].version[0], fb[0].version[1]);
 		}
+#else
+		sbk_udp_recv(conn, &fb, sizeof(SbkHighFb));
+		
+		usleep(500);
+		++time;
+
+		if (time%2000 == 0)
+			sbk_sync_printf("[ FB(%ld):%d ] Status:\n"
+					   "\tSN:  %d%d\n"
+					   "\tVer: %d%d\n",
+					   syscall(__NR_gettid), time,
+					   fb.serialNumber[0], fb.serialNumber[1],
+					   fb.version[0], fb.version[1]);
+#endif	
 	}
 	
 	return NULL;
@@ -77,20 +92,9 @@ control(void *args)
 	while (1) {
 		usleep(500);
 		++time;
-
-		sbk_udp_send(conn, (uint8_t *) (&ctrl), sizeof(SbkHighCtrl)+1);
-			
-		if (time%1000 != 0)
+		
+		if (time%2000 != 0)
 			continue;
-
-		if ( ! atomic_flag_test_and_set_explicit(&stdoutLock,
-											  memory_order_acquire)) {
-			printf("[ CTRL(%ld) ] motion time: %d\n",
-				   syscall(__NR_gettid), time);
-			
-			atomic_flag_clear_explicit(&stdoutLock,
-									   memory_order_release);
-		}
 			
 		switch (time) {
 			case 1: {
@@ -98,54 +102,54 @@ control(void *args)
 				ctrl.euler[0] = -0.3;
 				break;
 			}
-			case 1000: {
+			case 2000: {
 				ctrl.euler[0] = 0.3;
 				break;
 			}
-		    case 2000: {
+		    case 4000: {
 				ctrl.euler[0] = 0;
 				ctrl.euler[1] = -0.2;
 				break;
 			}
-		    case 3000: {
+		    case 6000: {
 				ctrl.euler[1] = 0.2;
 				break;
 			}
-			case 4000: {
+			case 8000: {
 				ctrl.euler[1] = 0;
 				ctrl.euler[2] = -0.2;
 				break;
 			}
-			case 5000: {
+			case 10000: {
 				ctrl.euler[2] = 0.2;
 				break;
 			}
-			case 6000: {
+			case 12000: {
 				ctrl.euler[2] = 0;
 				ctrl.bodyHeight = -0.2;
 				break;
 			}
-			case 7000: {
+			case 14000: {
 				ctrl.bodyHeight = 0.1;
 				break;
 			}
-			case 8000: {
+			case 16000: {
 				ctrl.bodyHeight = 0;
 				break;
 			}
-			case 9000: {
+			case 18000: {
 				ctrl.mode = SBK_MODE_STAND_DOWN;
 				break;
 			}
-		    case 11000: {
+		    case 22000: {
 				ctrl.mode = SBK_MODE_STAND_UP;
 				break;
 			}
-			case 12000: {
+			case 24000: {
 				ctrl.mode = SBK_MODE_IDLE;
 				break;
 			}
-			case 16000: {
+			case 32000: {
 				ctrl.mode        = SBK_MODE_TARGET_VELOCITY;
 				ctrl.gait        = SBK_GAIT_TROT;
 				ctrl.velocity[0] = 0.4;
@@ -153,38 +157,50 @@ control(void *args)
 				ctrl.bodyHeight  = 0.1;
 				break;
 			}
-			case 19000: {
+			case 39000: {
 				ctrl.mode        = SBK_MODE_IDLE;
 				ctrl.velocity[0] = 0.0;
 				break;
 			}
-			case 22000: {
+			case 44000: {
 				ctrl.mode        = SBK_MODE_TARGET_VELOCITY;
 				ctrl.gait        = SBK_GAIT_TROT;
 				ctrl.velocity[0] = 0.2;
 				break;
 			}
-			case 24000: {
+			case 48000: {
 				ctrl.mode        = SBK_MODE_FORCE_STAND;
 				ctrl.gait        = SBK_GAIT_IDLE;
 				ctrl.velocity[0] = 0.0;
 				break;
 			}
-			case 25000: {
+			case 50000: {
 				ctrl.mode = SBK_MODE_STRAIGHT_HAND;
 				break;
 			}
-			case 27000: {
+			case 54000: {
 				ctrl.mode = SBK_MODE_JUMP_YAW;
 				break;
 			}
-			case 29000: {
+			case 58000: {
 				ctrl.mode = SBK_MODE_IDLE;
 				
 				time = 0;
 			}
 		} // switch (time)
+
+		sbk_sync_printf("[ CTRL(%ld) ] ---------------------\n"
+				   "mode:        %d\n"
+				   "euler:       0: %f, 1: %f, 2: %f\n"
+				   "bodyHeight:  %f\n"
+				   "motion time: %d\n"
+				   "-----------------------------------\n",
+				   syscall(__NR_gettid), ctrl.mode,
+				   ctrl.euler[0], ctrl.euler[1], ctrl.euler[2],
+				   ctrl.bodyHeight,
+				   time);
 		
+		sbk_udp_send(conn, (uint8_t *) (&ctrl), sizeof(SbkHighCtrl));
 	} // while (1)
 	
 	return NULL;
@@ -196,30 +212,28 @@ main()
 {
 	// fbt:    feedback thread
 	// ctrlt:  control thread
-	// recvt:  receive thread
-	pthread_t fbt, ctrlt, recvt;
+	pthread_t fbt, ctrlt;
 	SbkConnection conn;
 	SbkMsgQueue *queue;
 
-	SbkRecvLoopArgs recvLoopArgs = {0};
 	CtrlArgs ctrlArgs = {0};
 	FbArgs fbArgs = {0};
-	
-	char addrStr[INET_ADDRSTRLEN];
 
-	sbk_udp_open(SBK_UDP_LISTEN_PORT,
-				 SBK_UDP_HIGH_LEVEL_CONN,
-				 0, &conn, &queue);
+#ifndef MSG_QUEUE
+	SbkRecvLoopArgs recvLoopArgs = {0};
+	queue = NULL;
+#endif
+	if (sbk_udp_open(SBK_UDP_LISTEN_PORT,
+					 SBK_WIRED_LISTEN_IP,
+					 SBK_UDP_HIGH_LEVEL_CONN,
+					 0, &conn, &queue) < 0) {
+		sbk_sync_printf("Exiting...\n");
+		return -1;
+	};
 
-	inet_ntop(AF_INET, &conn.to.sin_addr,
-			  addrStr, INET_ADDRSTRLEN);
-	printf("conn = {\n"
-		   "\t.sockfd = %d;\n"
-		   "\t.endpoint = {\n"
-		   "\t\t.sin_port = %d;\n"
-		   "\t\t.sin_addr = { .s_addr = %s; };\n"
-		   "\t};\n};\n",
-		   conn.sendfd, ntohs(conn.to.sin_port), addrStr);
+#ifdef MSG_QUEUE	
+	// recvt:  receive thread
+	pthread_t recvt;
 	
 	recvLoopArgs.conn       = &conn;
 	recvLoopArgs.queue      = queue;
@@ -228,6 +242,9 @@ main()
 				   (void *) &recvLoopArgs);
 
 	fbArgs.queue = queue;
+#else
+	fbArgs.conn = &conn;
+#endif
 	pthread_create(&fbt, NULL, feedback, (void *) &fbArgs);
 	
 	ctrlArgs.conn = &conn;
@@ -235,11 +252,13 @@ main()
 
 	while (1) if (getc(stdin) == '\n') break;
 
-	printf("Exiting...");
+	sbk_sync_printf("Exiting...\n");
 	
 	pthread_cancel(fbt);
 	pthread_cancel(ctrlt);
+#ifdef MSG_QUEUE
 	pthread_cancel(recvt);
+#endif
 		
 	sbk_udp_close(&conn, queue);
 	
