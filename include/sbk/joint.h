@@ -32,7 +32,7 @@ typedef struct __PACKED {
 	float    etau;   // extimated torque [N*m]
 	float    _q, _dq, _ddq; // reserved
 	int8_t   t;      // temperature
-	uint32_t _r[3];  // reserved
+	uint32_t _r[2];  // reserved
 } SbkMotorFb;
 
 
@@ -45,6 +45,9 @@ typedef struct __PACKED {
 	uint16_t    kd;   // velocity stiffness [N*m/(rad/s)]
 	uint32_t _r[3];  // reserved
 } SbkMotorCtrl;
+
+
+void __SBK_debug_print_motor_fb(SbkMotorFb *);
 
 
 #endif // !__SBK_JOINT_H

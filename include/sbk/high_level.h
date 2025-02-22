@@ -6,6 +6,7 @@
 #include <sbk/joint.h>
 #include <sbk/macro.h>
 #include <sbk/pos.h>
+#include <sbk/syncio.h>
 #include <sbk/udp.h>
 
 
@@ -104,6 +105,9 @@ typedef struct __PACKED {
 
     uint32_t   crc;
 } SbkHighCtrl;
+
+
+void __SBK_debug_print_high_fb(const SbkHighFb *);
 
 
 #endif // !__SBK_HIGH_LEVEL_H

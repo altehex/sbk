@@ -28,9 +28,6 @@ typedef enum {
 #define SBK_WIRED_LISTEN_IP  ((in_addr_t) SBK_OCTETS_TO_ADDR(192,168,123,16))
 
 
-extern struct sockaddr_in sbkMcuAddr, sbkPiAddr;
-
-
 typedef struct {
 	int                 sendfd, recvfd;
 	struct sockaddr_in  send, recv;

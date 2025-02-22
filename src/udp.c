@@ -238,16 +238,20 @@ sbk_udp_recv(const SbkConnection  *conn,
 			 void                 *buf,
 			 const ssize_t        recvSize)
 {
+	socklen_t addrlen = sizeof(struct sockaddr_in);
+	
 #ifdef DEBUG
-	ssize_t recvBytes = recvfrom(conn->recvfd, buf, recvSize,
-								 0, (struct sockaddr *) &(conn->recv), 0);
+	recvfrom(conn->recvfd, buf, recvSize,
+			 0, (struct sockaddr *) &(conn->recv),
+			 &addrlen);
 
-	sbk_sync_printf("-- Received bytes: %ld\n", recvBytes);
-	return recvBytes;
+	sbk_sync_printf("-- Received bytes: %ld\n", addrlen);
+	return addrlen;
 #endif
 	
 	return recvfrom(conn->recvfd, buf, recvSize,
-					0, (struct sockaddr *) &(conn->recv), 0);
+					0, (struct sockaddr *) &(conn->recv),
+					&addrlen);
 }
 
 

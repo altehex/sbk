@@ -103,4 +103,7 @@ typedef struct {
 /* } */
 
 
+void __SBK_debug_print_low_fb(const SbkLowFb *);
+
+
 #endif // !__SBK_LOW_LEVEL_H

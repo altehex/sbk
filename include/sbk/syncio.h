@@ -10,8 +10,14 @@
 extern atomic_flag __SBK_stdoutLock;
 
 
+typedef enum {
+	NO_SYNC,
+	SYNC
+} SbkEnableSync;
+
+
 __attribute__((format (printf, 1, 2)))
-static inline void
+static inline int
 sbk_sync_printf(const char *fmt, ...)
 {
 	va_list args;
