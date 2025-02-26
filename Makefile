@@ -1,4 +1,4 @@
-SRC = high_level.c low_level.c syncio.c udp.c
+SRC = crc.c high_level.c joint.c low_level.c safety.c syncio.c udp.c
 
 EXAMPLE_SRC = walk.c position.c raw.c pushup.c
 

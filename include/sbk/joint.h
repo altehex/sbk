@@ -7,6 +7,13 @@
 #include <stdint.h>
 
 
+#define SBK_HIP_MAX     (1.047f)
+#define SBK_HIP_MIN     (-1.047f)
+#define SBK_CALF_MAX    (-0.837f)
+#define SBK_CALF_MIN    (-2.721f)
+#define SBK_THIGH_MAX   (2.966f)
+#define SBK_THIGH_MIN   (-0.663f)
+
 #define SBK_MOTOR_SERVO    0x0A
 #define SBK_MOTOR_DAMPING  0x00
 #define SBK_MOTOR_OVERHEAT 0x08
@@ -30,10 +37,24 @@ typedef struct __PACKED {
 	float    dq;     // velocity [rad/s]
 	float    ddq;    // acceleration [rad/s^2] 
 	float    etau;   // extimated torque [N*m]
-	float    _q, _dq, _ddq; // reserved
+	float    _q, _dq;
+	float    _ddq; // reserved
 	int8_t   t;      // temperature
 	uint32_t _r[2];  // reserved
-} SbkMotorFb;
+} SbkMotorHighFb;
+
+
+typedef struct __PACKED {
+	uint8_t   mode;   // motor mode (see SBK_MOTOR_ constants)
+	float     q;      // angle [rad]
+	float     dq;     // velocity [rad/s]
+	uint16_t  ddq;    // acceleration [rad/s^2] 
+	uint16_t  etau;   // extimated torque [N*m]
+	float     _q, _dq;
+	uint16_t  _ddq; // reserved
+	int8_t    t;      // temperature
+	uint32_t  _r[2];  // reserved
+} SbkMotorLowFb;
 
 
 typedef struct __PACKED {
@@ -47,7 +68,8 @@ typedef struct __PACKED {
 } SbkMotorCtrl;
 
 
-void __SBK_debug_print_motor_fb(SbkMotorFb *);
+void __SBK_debug_print_motor_ctrl(SbkMotorCtrl *);
+void __SBK_debug_print_motor_fb(SbkMotorHighFb *);
 
 
 #endif // !__SBK_JOINT_H

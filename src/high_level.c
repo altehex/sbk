@@ -9,30 +9,102 @@ void
 __SBK_debug_print_high_fb(const SbkHighFb *fb)
 {
 	const char *fmt =
-		/* "head<%zu>: %x%x\n" */
-		/* "levelFlag<%zu>:\t\t%x\n" */
-		/* "serialNumber<%zu>:\t\t%d-%d\n" */
-		/* "imu<%zu>:\n" */
-		/* "joints<%zu>:\n" */
-		/* "\tRL_HIP:\n" */
-		/* "\t\tq = %f\n" */
+		"head<%zu>: %x %x\n"
+		"levelFlag<%zu>: %d\n"
+		"serialNumber<%zu>: %x %x\n"
+		"imu<%zu>:\n"
+		"\tq: %f %f %f %f\n"
+		"\tg: %f %f %f\n"
+		"joints<%zu>:\n"
 		"bms<%zu>:\n"
-		"\tcurrent = %d\n"
-		"footForce<%zu>\n"
-		"mode<%zu>:\t\t%d\n"
-		"footHeight<%zu>:\t\t%d\n"
-		"bodyHeight<%zu>:\t\t%d\n";
+		"footForce<%zu>:\n"
+		"mode<%zu>: %d\n"
+		"gait<%zu>:\n"
+		"footHeight<%zu>:\n"
+		"pos<%zu>:\n"
+		"bodyHeight<%zu>: %f\n"
+		/* "velocity<%zu>:\n" */
+		/* "yawSpeed<%zu>:\n" */
+		/* "rangeObstacle<%zu>:\n" */
+		/* "footPos2body<%zu>:\n" */
+		/* "footSpeed2body<%zu>:\n" */
+		/* "wirelessremote<%zu>:\n" */
+		/* "crc<%zu>:\n" */
+		"SbkHighFb size: %d\n"
+		;
 
-	printf(fmt,
-		   /* offsetof(SbkHighFb, head), fb->head[0], fb->head[1], */
-		   /* offsetof(SbkHighFb, levelFlag), fb->levelFlag, */
-		   /* offsetof(SbkHighFb, serialNumber), fb->serialNumber[0], fb->serialNumber[1], */
-		   /* offsetof(SbkHighFb, imu), */
-		   /* offsetof(SbkHighFb, joint), */
-		   /* fb->joint[RL_HIP].q, */
-		   offsetof(SbkHighFb, bms), fb->bms.current),
+	sbk_sync_printf(fmt,
+		   offsetof(SbkHighFb, head), fb->head[0], fb->head[1],
+		   offsetof(SbkHighFb, levelFlag), fb->levelFlag,
+		   offsetof(SbkHighFb, serialNumber), fb->serialNumber[0], fb->serialNumber[1],
+		   offsetof(SbkHighFb, imu),
+		       fb->imu.q[0], fb->imu.q[1], fb->imu.q[2], fb->imu.q[3], 
+		       fb->imu.g[0], fb->imu.g[1], fb->imu.g[2],
+		   offsetof(SbkHighFb, joint),
+		   offsetof(SbkHighFb, bms),
 		   offsetof(SbkHighFb, footForce),
-		   offsetof(SbkHighFb, mode), fb->mode,
-		   offsetof(SbkHighFb, footHeight), fb->footHeight,
-		   offsetof(SbkHighFb, bodyHeight), fb->bodyHeight;
+		   offsetof(SbkHighFb, mode), fb->mode, /* fb->mode, */
+		   offsetof(SbkHighFb, gait),
+		   offsetof(SbkHighFb, footHeight),
+		   offsetof(SbkHighFb, pos),
+		   offsetof(SbkHighFb, bodyHeight), fb->bodyHeight,
+		   /* offsetof(SbkHighFb, velocity), */
+		   /* offsetof(SbkHighFb, yawSpeed), */
+		   /* offsetof(SbkHighFb, rangeObstacle), */
+		   /* offsetof(SbkHighFb, footPos2Body), */
+		   /* offsetof(SbkHighFb, footSpeed2Body), */
+		   /* offsetof(SbkHighFb, wirelessRemote), */
+		   /* offsetof(SbkHighFb, crc) */
+		   sizeof(SbkHighFb)
+		   );
+}
+
+void
+__SBK_debug_print_high_ctrl(const SbkHighCtrl *ctrl)
+{
+	const char *fmt =
+		"head<%zu>:\n"
+		"levelFlag<%zu>:\n"
+		"serialNumber<%zu>:\n"
+		"mode<%zu>: %d\n"
+		/* "gait<%zu>:\n" */
+		/* "footHeight<%zu>:\n" */
+		/* "bodyHeight<%zu>:\n" */
+		/* "euler<%zu>:\n" */
+		/* "velocity<%zu>:\n" */
+		/* "yawSpeed<%zu>:\n" */
+		/* "bms<%zu>:\n" */
+		/* "led<%zu>:\n" */
+		/* "wirelessremote<%zu>:\n" */
+		/* "_r4<%zu>:\n" */
+		/* "crc<%zu>:\n" */
+		;
+
+	sbk_sync_printf(fmt,
+		   offsetof(SbkHighCtrl, head),
+		   offsetof(SbkHighCtrl, levelFlag),
+		   offsetof(SbkHighCtrl, serialNumber),
+		   offsetof(SbkHighCtrl, mode), ctrl->mode/* , */
+		   /* offsetof(SbkHighCtrl, gait), */
+		   /* offsetof(SbkHighCtrl, footHeight), */
+		   /* offsetof(SbkHighCtrl, bodyHeight), */
+		   /* offsetof(SbkHighCtrl, euler), */
+		   /* offsetof(SbkHighCtrl, velocity), */
+		   /* offsetof(SbkHighCtrl, yawSpeed), */
+		   /* offsetof(SbkHighCtrl, bms), */
+		   /* offsetof(SbkHighCtrl, led), */
+		   /* offsetof(SbkHighCtrl, joystick), */
+		   /* offsetof(SbkHighCtrl, _r4), */
+		   /* offsetof(SbkHighCtrl, crc) */
+		   );
+}
+
+
+void
+__SBK_debug_print_high_ctrl_packet(const SbkHighCtrl *ctrl)
+{
+	for (int i = 0; i < sizeof(SbkHighCtrl); ++i)
+		printf("%2X", ((uint8_t *)ctrl)[i]);
+	
+	sbk_sync_puts(""); 
 }

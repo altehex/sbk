@@ -31,9 +31,20 @@ typedef struct __PACKED {
 	uint8_t  soc;
 	uint32_t current;     // [mA]
 	uint16_t cycle;
+	int16_t   bqNtc[2];    // [Co]
+	int16_t   mcuNtc[2];   // [Co]
+	uint16_t voltage[8]; // [mV]
+} SbkBmsHighFb;
+
+typedef struct __PACKED {
+	uint8_t  version[2];
+	uint8_t  status;
+	uint8_t  soc;
+	uint32_t current;     // [mA]
+	uint16_t cycle;
 	int8_t   bqNtc[2];    // [Co]
-	int8_t   McuNtc[2];   // [Co]
-	uint16_t voltage[10]; // [mV]
+	int8_t   mcuNtc[2];   // [Co]
+	uint8_t voltage[10]; // [mV]
 } SbkBmsFb;
 
 

@@ -1,11 +1,13 @@
 #include <sbk/udp.h>
 
+#include <sbk/crc.h>
 #include <sbk/high_level.h>
 #include <sbk/low_level.h>
 #include <sbk/macro.h>
 #include <sbk/syncio.h>
 
 #include <errno.h>
+#include <pthread.h>
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -30,15 +32,30 @@ __SBK_debug_udp_print_conn(const int fd,
 			   fd, addrStr, ntohs(addrOut->sin_port));
 }
 
-
-int
-__SBK_setup_udp_socket(const in_addr_t     addr,
-					   struct sockaddr_in  *addrOut,
-					   const u_short       port)
+ssize_t
+sbk_udp_open(SbkConnType    type,
+			 const size_t   queueLength,
+			 SbkConnection  *conn,
+			 SbkMsgQueue    **queue)
 {
-	int   fd;
-	char  addrStr[INET_ADDRSTRLEN];
-	
+	SbkMsgQueue  *qp;
+	uint8_t      emptyMsg[sizeof(SbkLowCtrl)];
+	u_short      port;
+	int          msgSize, qLen, fd;
+	in_addr_t    addr;
+	char         addrStr[INET_ADDRSTRLEN];
+
+	if (type == SBK_UDP_LOW_LEVEL_CONN) {
+		msgSize = sizeof(SbkLowCtrl);
+		port    = SBK_UDP_LOW_LEVEL_PORT;
+		addr    = SBK_MCU_ADDR;
+	} else {
+		msgSize  = sizeof(SbkHighCtrl);
+		port     = SBK_UDP_HIGH_LEVEL_PORT;
+		addr     = SBK_PI_ADDR;
+	}
+
+	// Set up SbkConnection instance	
 	fd = socket(AF_INET, SOCK_DGRAM, 0);
 
 	if (fd == -1) {
@@ -46,14 +63,18 @@ __SBK_setup_udp_socket(const in_addr_t     addr,
 		return -1;
 	}
 
-	addrOut->sin_addr.s_addr = addr;
-	addrOut->sin_port        = htons(port);
-	addrOut->sin_family      = AF_INET;
+	conn->addr.sin_addr.s_addr = addr;
+	conn->addr.sin_port        = htons(port);
+	conn->addr.sin_family      = AF_INET;
+
+	conn->fd      = fd;
+	conn->msgSize = msgSize;
+	pthread_mutex_init(&(conn->mtx), NULL);
 	
-	inet_ntop(AF_INET, &(addrOut->sin_addr),
+	inet_ntop(AF_INET, &(conn->addr.sin_addr),
 			  addrStr, INET_ADDRSTRLEN); 
 
-	if (connect(fd, (struct sockaddr *) addrOut,
+	if (connect(fd, (struct sockaddr *) &(conn->addr),
 				sizeof(struct sockaddr_in)) == -1) {
 		sbk_sync_printf("!! Failed to connect to %s:%d\n"
 				   "!! errno: %d\n",
@@ -63,45 +84,8 @@ __SBK_setup_udp_socket(const in_addr_t     addr,
 	}
 	
 #ifdef DEBUG
-	__SBK_debug_udp_print_conn(fd, addrOut);
+	__SBK_debug_udp_print_conn(fd, &(conn->addr));
 #endif
-
-	return fd;
-}
-
-ssize_t
-sbk_udp_open(const u_short    recvPort,
-			 const in_addr_t  recvAddr,
-			 SbkConnType      type,
-			 const ssize_t    queueLength,
-			 SbkConnection    *conn,
-			 SbkMsgQueue      **queue)
-{
-	SbkMsgQueue  *qp;
-	uint8_t      emptyMsg[sizeof(SbkLowCtrl)];
-	u_short      sendPort;
-	int          msgSize, qLen, sendfd, recvfd;
-	in_addr_t    sendAddr;
-
-	if (type == SBK_UDP_LOW_LEVEL_CONN) {
-		msgSize  = sizeof(SbkLowCtrl);
-		sendPort = SBK_UDP_LOW_LEVEL_PORT;
-		sendAddr = SBK_MCU_ADDR;
-	} else {
-		msgSize  = sizeof(SbkHighCtrl);
-		sendPort = SBK_UDP_HIGH_LEVEL_PORT;
-		sendAddr = SBK_PI_ADDR;
-	}
-
-	// Set up SbkConnection instance
-	sendfd = __SBK_setup_udp_socket(sendAddr, &(conn->send), sendPort);
-	recvfd = __SBK_setup_udp_socket(recvAddr, &(conn->recv), recvPort);
-
-	if (sendfd == -1 || recvfd == -1)
-		return -1;
-
-	conn->sendfd = sendfd;
-	conn->recvfd = recvfd;
 	
 	// Set up message queue if needed
 	if (queue) {
@@ -136,8 +120,7 @@ void
 sbk_udp_close(SbkConnection  *conn,
 			  SbkMsgQueue    *queue)
 {	
-	close(conn->recvfd);
-	close(conn->sendfd);
+	close(conn->fd);
 	
 	if (queue) {
 		free(queue->head);
@@ -147,120 +130,72 @@ sbk_udp_close(SbkConnection  *conn,
 
 
 ssize_t
-sbk_udp_send(const SbkConnection  *conn,
-			 const uint8_t        *data,
-			 const unsigned int   size)
+sbk_udp_send(SbkConnection  *conn,
+			 uint8_t        *data,
+			 const size_t   size)
 {
+	ssize_t bytesSent;
+	int lockStatus;
+
+	data[size-4] = sbk_gen_crc((uint32_t *)data, size);
+	
+	lockStatus = pthread_mutex_trylock(&(conn->mtx));
+	
+	if (lockStatus != 0) {
 #ifdef DEBUG
-	ssize_t bytesSent = sendto(conn->sendfd, data, size-1, 0,
-							   (struct sockaddr *) &(conn->send),
-							   sizeof(struct sockaddr_in));
-	__SBK_debug_udp_print_conn(conn->sendfd, &(conn->send));
+		sbk_sync_printf("!! Failed to acquire socket lock\n"
+						"!! errno: %d\n",
+						lockStatus);
+#endif
+		return -1;
+	}
+	
+	bytesSent = sendto(conn->fd, data, size-1, 0,
+					   (struct sockaddr *) &(conn->addr),
+					   sizeof(struct sockaddr_in));
+
+	pthread_mutex_unlock(&(conn->mtx));
+	
+#ifdef DEBUG
+	__SBK_debug_udp_print_conn(conn->fd, &(conn->addr));
 	sbk_sync_printf("-- Bytes sent: %ld (intended: %ld)\n",
 					bytesSent, size);
-	return bytesSent;
 #endif
 	
-	return sendto(conn->sendfd, data, size, 0,
-				  (struct sockaddr *) &(conn->send),
-		          sizeof(struct sockaddr_in));
-}
-
-
-// !!! intrinsic, not thread safe
-int
-__SBK_retrieve_from_queue(SbkMsgQueue   *queue,
-				          void          *buf,
-						  const ssize_t length)
-{
-	unsigned long head, offset;
-	ssize_t retrieved;
-
-	if ( ! queue->available)
-		return 0;
-	
-	retrieved = __MIN(length, (queue->length)-(queue->free));
-	
-	head   = (unsigned long) queue->head;
-	offset = (unsigned long) queue->offset;
-	
-	memmove(buf, (void *) (head+offset),
-			retrieved*(queue->msgSize));
-
-	queue->free += retrieved;
-	
-	return retrieved;
-}
-
-int
-sbk_udp_get_msgs(SbkMsgQueue   *queue,
-				 void          *buf,
-				 const ssize_t length)
-{
-	atomic_flag *lock;
-	ssize_t retrieved;
-
-	lock = &(queue->lock);
-	
-	while ( ! atomic_flag_test_and_set_explicit(
-			  lock, memory_order_acquire)) { continue; };
-
-	retrieved = __SBK_retrieve_from_queue(queue, buf, length);
-		
-	atomic_flag_clear_explicit(lock, memory_order_release);
-	
-	return retrieved;
-}
-
-int
-sbk_udp_try_get_msgs(SbkMsgQueue   *queue,
-				     void          *buf,
-					 const ssize_t length)
-{
-	atomic_flag *lock;
-	ssize_t retrieved;
-
-	lock = &(queue->lock);
-	
-	if ( ! atomic_flag_test_and_set_explicit(
-			  lock, memory_order_acquire)) return 1;
-	
-	retrieved = __SBK_retrieve_from_queue(queue, buf, length);
-	
-	atomic_flag_clear_explicit(lock, memory_order_release);
-	
-	return retrieved;
+	return bytesSent;
 }
 
 
 ssize_t
-sbk_udp_recv(const SbkConnection  *conn,
-			 void                 *buf,
-			 const ssize_t        recvSize)
+sbk_udp_recv(SbkConnection  *conn,
+			 void           *buf,
+			 const size_t   recvSize)
 {
 	socklen_t addrlen = sizeof(struct sockaddr_in);
-	
-#ifdef DEBUG
-	recvfrom(conn->recvfd, buf, recvSize,
-			 0, (struct sockaddr *) &(conn->recv),
-			 &addrlen);
 
+	pthread_mutex_trylock(&(conn->mtx));
+	
+	recvfrom(conn->fd, buf, recvSize, 0,
+			 (struct sockaddr *) &(conn->addr), &addrlen);
+
+	pthread_mutex_unlock(&(conn->mtx));
+
+#ifdef DEBUG
 	sbk_sync_printf("-- Received bytes: %ld\n", addrlen);
-	return addrlen;
 #endif
 	
-	return recvfrom(conn->recvfd, buf, recvSize,
-					0, (struct sockaddr *) &(conn->recv),
-					&addrlen);
+	return addrlen;
 }
 
+
+#if 0 // Have to reimplement message queue once it'll start to work properly
 
 /*************************
   
 typedef struct {
 	SbkConnection *conn;
 	SbkMsgQueue   *queue;
-	ssize_t       recvLength;
+	size_t        recvLength;
 } SbkRecvLoopArgs;
 
 *************************/
@@ -271,8 +206,8 @@ sbk_udp_recv_loop(void *args)
 	SbkRecvLoopArgs *a;
 	SbkMsgQueue *queue;
 	unsigned long head, offset;
-	ssize_t msgSize, length, *free, recvLength,
-		    bytesRead;
+	size_t msgSize, length, *free, recvLength,
+		   bytesRead;
 	atomic_flag *lock;
 
 	a = (SbkRecvLoopArgs *) args;
@@ -336,3 +271,70 @@ release:
 	return NULL;
 }
 
+
+// !!! intrinsic, not thread safe
+int
+__SBK_retrieve_from_queue(SbkMsgQueue   *queue,
+				          void          *buf,
+						  const size_t  length)
+{
+	unsigned long head, offset;
+	ssize_t retrieved;
+
+	if ( ! queue->available)
+		return 0;
+	
+	retrieved = __MIN(length, (queue->length)-(queue->free));
+	
+	head   = (unsigned long) queue->head;
+	offset = (unsigned long) queue->offset;
+	
+	memmove(buf, (void *) (head+offset),
+			retrieved*(queue->msgSize));
+
+	queue->free += retrieved;
+	
+	return retrieved;
+}
+
+int
+sbk_udp_get_msgs(SbkMsgQueue   *queue,
+				 void          *buf,
+				 const size_t  length)
+{
+	atomic_flag *lock;
+	ssize_t retrieved;
+
+	lock = &(queue->lock);
+	
+	while ( ! atomic_flag_test_and_set_explicit(
+			  lock, memory_order_acquire)) { continue; };
+
+	retrieved = __SBK_retrieve_from_queue(queue, buf, length);
+		
+	atomic_flag_clear_explicit(lock, memory_order_release);
+	
+	return retrieved;
+}
+
+int
+sbk_udp_try_get_msgs(SbkMsgQueue   *queue,
+				     void          *buf,
+					 const size_t  length)
+{
+	atomic_flag *lock;
+	ssize_t retrieved;
+
+	lock = &(queue->lock);
+	
+	if ( ! atomic_flag_test_and_set_explicit(
+			  lock, memory_order_acquire)) return 1;
+	
+	retrieved = __SBK_retrieve_from_queue(queue, buf, length);
+	
+	atomic_flag_clear_explicit(lock, memory_order_release);
+	
+	return retrieved;
+}
+
+#endif

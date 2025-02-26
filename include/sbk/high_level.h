@@ -4,6 +4,7 @@
 
 #include <sbk/bms.h>
 #include <sbk/joint.h>
+#include <sbk/joystick.h>
 #include <sbk/macro.h>
 #include <sbk/pos.h>
 #include <sbk/syncio.h>
@@ -39,75 +40,77 @@ typedef enum {
 
 
 typedef struct __PACKED {
-	uint8_t r, g, b;
+	uint8_t r, g, b, _;
 } SbkLed;
 
 
 typedef struct __PACKED {
-	uint8_t    head[2];
-	uint8_t    levelFlag;
-	uint8_t    _r1;
-	uint32_t   serialNumber[2];
-	uint32_t   version[2];
-	uint16_t   bandwidth;
+	uint8_t      head[2];
+	uint8_t      levelFlag;
+	uint8_t      _r1;
+	uint32_t     serialNumber[2];
+	uint32_t     version[2];
+	uint16_t     bandwidth;
 
-	SbkImu     imu;
-	SbkMotorFb joint[20];
-	SbkBmsFb   bms;
+	SbkImu       imu;
+	SbkMotorHighFb  joint[20];
+	SbkBmsHighFb     bms;
 	
-	int16_t    footForce[4];
-	int16_t    _r2[4];               // footForceEst
-	uint8_t    mode;
-	float      _r3;                  // progress
-	uint8_t    gait;
-	float      footHeight;           // [m] (default = 0.08)
-	float      pos[3];               // [m]
-    float      bodyHeight;           // [m] (default = 0.28m)
-    float      velocity[3];          // [m/s]
-    float      yawSpeed;             // [rad/s]
-    float      rangeObstacle[4];     // 
-    SbkCoord   footPos2Body[4];      // 
-    SbkCoord   footSpeed2Body[4];    // 
+	int16_t      footForce[4];
+	int16_t      _r2[4];               // footForceEst
+	uint8_t      mode;
+	float        _r3;                  // progress
+	uint8_t      gait;
+	float        footHeight;           // [m] (default = 0.08)
+	float        pos[3];               // [m]
+    float        bodyHeight;           // [m] (default = 0.28m)
+    float        velocity[3];          // [m/s]
+    float        yawSpeed;             // [rad/s]
+    float        rangeObstacle[4];     // 
+    SbkCoord     footPos2Body[4];      // 
+    SbkCoord     footSpeed2Body[4];    // 
 
-	uint8_t    wirelessRemote[40];
+	SbkJoystick  wirelessRemote;
 
-	uint32_t   _r4;
+	uint32_t     _r4;
 
-    uint32_t   crc;
+    uint32_t     crc;
 } SbkHighFb;
 
 
 typedef struct __PACKED {
-	uint8_t    head[2];
-	uint8_t    levelFlag;
-	uint8_t    _r1;
-	uint32_t   serialNumber[2];
-	uint32_t   version[2];
-	uint16_t   bandwidth;
+	uint8_t      head[2];
+	uint8_t      levelFlag;
+	uint8_t      _r1;
+	uint32_t     serialNumber[2];
+	uint32_t     version[2];
+	uint16_t     bandwidth;
 	
-	uint8_t    mode;
-	uint8_t    gait;
+	uint8_t      mode;
+	uint8_t      gait;
 	
-	uint8_t    _r2; // speedLevel 
-	float      footHeight;           // [m] (default = 0.08)
-    float      bodyHeight;           // [m] (default = 0.28m)
-	float      _r3[2];               // pos [m]
-	float      euler[3];
-    float      velocity[2];          // [m/s]
-    float      yawSpeed;             // [rad/s]
+	uint8_t      _r2; // speedLevel 
+	float        footHeight;           // [m] (default = 0.08)
+    float        bodyHeight;           // [m] (default = 0.28m)
+	float        _r3[2];               // pos [m]
+	float        euler[3];
+    float        velocity[2];          // [m/s]
+    float        yawSpeed;             // [rad/s]
 	
-	SbkBmsCtrl bms;
-	SbkLed     led[4];
+	SbkBmsCtrl   bms;
+	SbkLed       led;
 	
-	uint8_t    wirelessRemote[40];
+	SbkJoystick  joystick;
 
-	uint32_t   _3;
+	uint32_t     _r4[3];
 
-    uint32_t   crc;
+    uint32_t     crc;
 } SbkHighCtrl;
 
 
 void __SBK_debug_print_high_fb(const SbkHighFb *);
+void __SBK_debug_print_high_ctrl(const SbkHighCtrl *);
+void __SBK_debug_print_high_ctrl_packet(const SbkHighCtrl *);
 
 
 #endif // !__SBK_HIGH_LEVEL_H

@@ -223,9 +223,7 @@ main()
 	SbkRecvLoopArgs recvLoopArgs = {0};
 	queue = NULL;
 #endif
-	if (sbk_udp_open(SBK_UDP_LISTEN_PORT,
-					 SBK_WIRED_LISTEN_IP,
-					 SBK_UDP_HIGH_LEVEL_CONN,
+	if (sbk_udp_open(SBK_UDP_HIGH_LEVEL_CONN,
 					 0, &conn, &queue) < 0) {
 		sbk_sync_printf("Exiting...\n");
 		return -1;
