@@ -68,8 +68,19 @@ typedef struct __PACKED {
 } SbkMotorCtrl;
 
 
+#ifdef DEBUG
+
 void __SBK_debug_print_motor_ctrl(SbkMotorCtrl *);
-void __SBK_debug_print_motor_fb(SbkMotorHighFb *);
+void __SBK_debug_print_motor_High_fb(SbkMotorHighFb *);
+void __SBK_debug_print_motor_Low_fb(SbkMotorLowFb *);
+
+#define __SBK_debug_print_motor_low_fb(FB) \
+	__SBK_debug_print_motor_Low_fb(FB)
+
+#define __SBK_debug_print_motor_high_fb(FB) \
+	__SBK_debug_print_motor_High_fb(FB)
+
+#endif // !DEBUG
 
 
 #endif // !__SBK_JOINT_H

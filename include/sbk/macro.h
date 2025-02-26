@@ -6,8 +6,12 @@
 #define __PURE __attribute__((pure))
 
 #define __MIN(A, B) \
-	({ __typeof__(A) ____A = (A), ____B = (B); \
-	   ____A < ____B ? ____A : ____B; })
+	({ __typeof__(A) ____MINA = (A), ____MINB = (B); \
+	   ____MINA < ____MINB ? ____MINA : ____MINB; })
+
+#define __MAX(A, B) \
+	({ __typeof__(A) ____MAXA = (A), ____MAXB = (B); \
+	   ____MAXA < ____MAXB ? ____MAXA : ____MAXB; })
 
 
 #endif // !__SBK_MACRO_H

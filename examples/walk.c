@@ -7,53 +7,25 @@
 #include <sys/syscall.h>
 
 
-// #define MSG_QUEUE
-
 
 typedef struct {
-#ifdef MSG_QUEUE
-	SbkMsgQueue *queue;
-#else
 	SbkConnection *conn;
-#endif
 } FbArgs;
 
 void *
 feedback(void *args)
 {	
 	int time;
-
-#ifdef MSG_QUEUE
-	ssize_t     msgRead;
-	SbkHighFb   fb[25];
-	SbkMsgQueue *queue = ((FbArgs *) args)->queue;
-#else
 	SbkHighFb     fb;
 	SbkConnection *conn = ((FbArgs*) args)->conn;
-#endif
 	
 	time = 0;
 	
 	while (1) {
-#ifdef MSG_QUEUE
-		msgRead = sbk_udp_try_get_msgs(queue, fb, 25);
+		while (sbk_udp_recv(conn, &fb, sizeof(SbkHighFb)) == -1)
+			continue;
 		
-		for (int i = 0; i < msgRead; ++i) {
-			usleep(500);
-			++time;
-
-			if (time%2000 == 0)
-					sbk_sync_printf("[ FB(%ld):%d ] Status:\n"
-							   "\tSN:  %d%d\n"
-							   "\tVer: %d%d\n",
-							   syscall(__NR_gettid), time,
-							   fb[0].serialNumber[0], fb[0].serialNumber[1],
-							   fb[0].version[0], fb[0].version[1]);
-		}
-#else
-		sbk_udp_recv(conn, &fb, sizeof(SbkHighFb));
-		
-		usleep(500);
+		usleep(1000000);
 		++time;
 
 		if (time%2000 == 0)
@@ -63,7 +35,6 @@ feedback(void *args)
 					   syscall(__NR_gettid), time,
 					   fb.serialNumber[0], fb.serialNumber[1],
 					   fb.version[0], fb.version[1]);
-#endif	
 	}
 	
 	return NULL;
@@ -214,35 +185,16 @@ main()
 	// ctrlt:  control thread
 	pthread_t fbt, ctrlt;
 	SbkConnection conn;
-	SbkMsgQueue *queue;
 
 	CtrlArgs ctrlArgs = {0};
 	FbArgs fbArgs = {0};
 
-#ifndef MSG_QUEUE
-	SbkRecvLoopArgs recvLoopArgs = {0};
-	queue = NULL;
-#endif
-	if (sbk_udp_open(SBK_UDP_HIGH_LEVEL_CONN,
-					 0, &conn, &queue) < 0) {
+	if (sbk_udp_open(SBK_UDP_HIGH_LEVEL_CONN, &conn, false, SOCK_NONBLOCK) < 0) {
 		sbk_sync_printf("Exiting...\n");
 		return -1;
 	};
-
-#ifdef MSG_QUEUE	
-	// recvt:  receive thread
-	pthread_t recvt;
 	
-	recvLoopArgs.conn       = &conn;
-	recvLoopArgs.queue      = queue;
-	recvLoopArgs.recvLength = 25;
-	pthread_create(&recvt, NULL, sbk_udp_recv_loop,
-				   (void *) &recvLoopArgs);
-
-	fbArgs.queue = queue;
-#else
 	fbArgs.conn = &conn;
-#endif
 	pthread_create(&fbt, NULL, feedback, (void *) &fbArgs);
 	
 	ctrlArgs.conn = &conn;
@@ -254,11 +206,8 @@ main()
 	
 	pthread_cancel(fbt);
 	pthread_cancel(ctrlt);
-#ifdef MSG_QUEUE
-	pthread_cancel(recvt);
-#endif
 		
-	sbk_udp_close(&conn, queue);
+	sbk_udp_close(&conn);
 	
 	return 0;
 }

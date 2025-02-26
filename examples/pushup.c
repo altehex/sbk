@@ -54,8 +54,7 @@ main()
 	SbkConnection conn;
 	CtrlArgs ctrlArgs = {0};
 
-	if (sbk_udp_open(SBK_UDP_HIGH_LEVEL_CONN,
-					 0, &conn, NULL) < 0) {
+	if (sbk_udp_open(SBK_UDP_HIGH_LEVEL_CONN, &conn, false, 0) < 0) {
 		sbk_sync_printf("Exiting...\n");
 		return -1;
 	};
@@ -67,7 +66,7 @@ main()
 
 	sbk_sync_printf("Exiting...\n");
 	pthread_cancel(ctrlt);
-	sbk_udp_close(&conn, NULL);
+	sbk_udp_close(&conn);
 	
 	return 0;
 }

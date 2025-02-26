@@ -9,13 +9,12 @@ void
 __SBK_debug_print_high_fb(const SbkHighFb *fb)
 {
 	const char *fmt =
-		"head<%zu>: %x %x\n"
-		"levelFlag<%zu>: %d\n"
+		"head<%zu>:         %x %x\n"
+		"levelFlag<%zu>:    %d\n"
 		"serialNumber<%zu>: %x %x\n"
 		"imu<%zu>:\n"
-		"\tq: %f %f %f %f\n"
-		"\tg: %f %f %f\n"
-		"joints<%zu>:\n"
+		"    q: %f %f %f %f\n"
+		"    g: %f %f %f\n"
 		"bms<%zu>:\n"
 		"footForce<%zu>:\n"
 		"mode<%zu>: %d\n"
@@ -23,13 +22,13 @@ __SBK_debug_print_high_fb(const SbkHighFb *fb)
 		"footHeight<%zu>:\n"
 		"pos<%zu>:\n"
 		"bodyHeight<%zu>: %f\n"
-		/* "velocity<%zu>:\n" */
-		/* "yawSpeed<%zu>:\n" */
-		/* "rangeObstacle<%zu>:\n" */
-		/* "footPos2body<%zu>:\n" */
-		/* "footSpeed2body<%zu>:\n" */
-		/* "wirelessremote<%zu>:\n" */
-		/* "crc<%zu>:\n" */
+		"velocity<%zu>:\n"
+		"yawSpeed<%zu>:\n"
+		"rangeObstacle<%zu>:\n"
+		"footPos2body<%zu>:\n"
+		"footSpeed2body<%zu>:\n"
+		"wirelessremote<%zu>:\n"
+		"crc<%zu>:\n"
 		"SbkHighFb size: %d\n"
 		;
 
@@ -40,7 +39,6 @@ __SBK_debug_print_high_fb(const SbkHighFb *fb)
 		   offsetof(SbkHighFb, imu),
 		       fb->imu.q[0], fb->imu.q[1], fb->imu.q[2], fb->imu.q[3], 
 		       fb->imu.g[0], fb->imu.g[1], fb->imu.g[2],
-		   offsetof(SbkHighFb, joint),
 		   offsetof(SbkHighFb, bms),
 		   offsetof(SbkHighFb, footForce),
 		   offsetof(SbkHighFb, mode), fb->mode, /* fb->mode, */
@@ -100,11 +98,4 @@ __SBK_debug_print_high_ctrl(const SbkHighCtrl *ctrl)
 }
 
 
-void
-__SBK_debug_print_high_ctrl_packet(const SbkHighCtrl *ctrl)
-{
-	for (int i = 0; i < sizeof(SbkHighCtrl); ++i)
-		printf("%2X", ((uint8_t *)ctrl)[i]);
-	
-	sbk_sync_puts(""); 
-}
+

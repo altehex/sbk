@@ -6,8 +6,8 @@
 #include <stdio.h>
 
 uint32_t
-sbk_gen_crc(const uint32_t  *struc,
-			const size_t   sz)
+__SBK_gen_crc(const uint32_t  *struc,
+			  const size_t   sz)
 {
 	uint32_t crc, x;
 
@@ -25,4 +25,17 @@ sbk_gen_crc(const uint32_t  *struc,
 	printf("CRC: %x\n", crc);
 	
 	return crc;
+}
+
+
+uint32_t
+__SBK_gen_crc_encode(const uint32_t *struc,
+						const size_t   sz)
+{
+	uint32_t crc = __SBK_gen_crc(struc, sz) ^ 0xEDCAB9DE;
+
+	return (crc & 0xFF) << 24
+		 | (crc & 0xFF00) >> 8
+		 | (crc & 0xFF0000) >> 8
+		 | (crc & 0xFF000000) >> 8;
 }

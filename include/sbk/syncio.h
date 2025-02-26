@@ -16,22 +16,13 @@ typedef enum {
 } SbkEnableSync;
 
 
-__attribute__((format (printf, 1, 2)))
-static inline int
-sbk_sync_printf(const char *fmt, ...)
-{
-	va_list args;
-
-	if ( ! atomic_flag_test_and_set_explicit(&__SBK_stdoutLock,
-											 memory_order_acquire)) {
-		va_start(args, fmt);
-		printf(fmt, args);
-
-		atomic_flag_clear_explicit(&__SBK_stdoutLock,
-								   memory_order_release);
-		va_end(args);
+#define sbk_sync_printf(FMT, ...) \
+	if ( ! atomic_flag_test_and_set_explicit(&__SBK_stdoutLock, \
+											 memory_order_acquire)) { \
+		printf(FMT, ##__VA_ARGS__); \
+		atomic_flag_clear_explicit(&__SBK_stdoutLock, \
+								   memory_order_release); \
 	}
-}
 
 
 static inline void

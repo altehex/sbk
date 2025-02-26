@@ -52,8 +52,8 @@ typedef struct __PACKED {
 	SbkMotorCtrl joint[20];
 	SbkBmsCtrl   bms;
 
-	uint8_t      _r1[40];
-	uint32_t     _r2;
+	SbkJoystick  joystick;
+	uint32_t     _r1;
 
 	uint32_t     crc;
 } SbkLowCtrl;

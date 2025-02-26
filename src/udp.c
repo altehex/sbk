@@ -6,7 +6,7 @@
 #include <sbk/macro.h>
 #include <sbk/syncio.h>
 
-#include <errno.h>
+#include <errno.h> 
 #include <pthread.h>
 #include <stdatomic.h>
 #include <stdbool.h>
@@ -19,6 +19,23 @@
 
 
 void
+__SBK_print_raw_msg(const uint8_t  *bytes,
+					const size_t   size)
+{
+	char *msg;
+
+	msg = (char *) malloc(size<<1);
+	
+	for (int i = 0; i < size<<1; i += 2)
+		sprintf(&(msg[i]), "%02X", ((uint8_t *)bytes)[i>>1]);
+
+	sbk_sync_printf("%s\n", msg);
+
+	free(msg);
+}
+
+
+void
 __SBK_debug_udp_print_conn(const int fd,
 						   struct sockaddr_in  *addrOut)
 {
@@ -28,17 +45,16 @@ __SBK_debug_udp_print_conn(const int fd,
 			  addrStr, INET_ADDRSTRLEN); 
 
 	sbk_sync_printf("-- sockfd: %ld\n"
-			   "-- address: %s:%d\n",
-			   fd, addrStr, ntohs(addrOut->sin_port));
+					"-- address: %s:%d\n",
+					fd, addrStr, ntohs(addrOut->sin_port));
 }
 
 ssize_t
 sbk_udp_open(SbkConnType    type,
-			 const size_t   queueLength,
 			 SbkConnection  *conn,
-			 SbkMsgQueue    **queue)
+			 const bool     encode,
+			 const int      socketType)
 {
-	SbkMsgQueue  *qp;
 	uint8_t      emptyMsg[sizeof(SbkLowCtrl)];
 	u_short      port;
 	int          msgSize, qLen, fd;
@@ -56,7 +72,7 @@ sbk_udp_open(SbkConnType    type,
 	}
 
 	// Set up SbkConnection instance	
-	fd = socket(AF_INET, SOCK_DGRAM, 0);
+	fd = socket(AF_INET, SOCK_DGRAM | socketType, 0);
 
 	if (fd == -1) {
 		sbk_sync_printf("!! Bad socket\n");
@@ -70,12 +86,19 @@ sbk_udp_open(SbkConnType    type,
 	conn->fd      = fd;
 	conn->msgSize = msgSize;
 	pthread_mutex_init(&(conn->mtx), NULL);
-	
-	inet_ntop(AF_INET, &(conn->addr.sin_addr),
-			  addrStr, INET_ADDRSTRLEN); 
+
+	// TO-DO: test if low level can be accessed with
+	//        decoded crc
+	if (encode)
+		conn->gen_code = __SBK_gen_crc_encode;
+	else
+		conn->gen_code = __SBK_gen_crc;
 
 	if (connect(fd, (struct sockaddr *) &(conn->addr),
 				sizeof(struct sockaddr_in)) == -1) {
+		inet_ntop(AF_INET, &(conn->addr.sin_addr),
+				  addrStr, INET_ADDRSTRLEN);
+		
 		sbk_sync_printf("!! Failed to connect to %s:%d\n"
 				   "!! errno: %d\n",
 				   addrStr, port,
@@ -86,22 +109,6 @@ sbk_udp_open(SbkConnType    type,
 #ifdef DEBUG
 	__SBK_debug_udp_print_conn(fd, &(conn->addr));
 #endif
-	
-	// Set up message queue if needed
-	if (queue) {
-		qLen = queueLength ? queueLength : SBK_UDP_MSG_QUEUE_LENGTH;
-		qp = (SbkMsgQueue *) malloc(sizeof(SbkMsgQueue));
-
-		qp->length    = qLen;
-		qp->msgSize   = msgSize;
-		qp->head      = (uint8_t *) malloc(msgSize*qLen);
-		qp->offset    = 0;
-		qp->free      = 0;
-		qp->lock      = (atomic_flag) {false};
-		qp->available = false;
-
-		(*queue) = qp;
-	}
 	
 	// Initialize the connecion by sending an empty command
 	memset(emptyMsg, 0, msgSize);
@@ -117,15 +124,9 @@ sbk_udp_open(SbkConnType    type,
 
 
 void
-sbk_udp_close(SbkConnection  *conn,
-			  SbkMsgQueue    *queue)
+sbk_udp_close(SbkConnection  *conn)
 {	
 	close(conn->fd);
-	
-	if (queue) {
-		free(queue->head);
-		free(queue);
-	}
 }
 
 
@@ -137,24 +138,24 @@ sbk_udp_send(SbkConnection  *conn,
 	ssize_t bytesSent;
 	int lockStatus;
 
-	data[size-4] = sbk_gen_crc((uint32_t *)data, size);
+	data[size-4] = conn->gen_code((uint32_t *)data, size);
 	
 	lockStatus = pthread_mutex_trylock(&(conn->mtx));
 	
 	if (lockStatus != 0) {
 #ifdef DEBUG
-		sbk_sync_printf("!! Failed to acquire socket lock\n"
+		printf("!! Failed to acquire socket lock\n"
 						"!! errno: %d\n",
 						lockStatus);
 #endif
 		return -1;
 	}
 	
-	bytesSent = sendto(conn->fd, data, size-1, 0,
+	bytesSent = sendto(conn->fd, data, size, 0,
 					   (struct sockaddr *) &(conn->addr),
 					   sizeof(struct sockaddr_in));
 
-	pthread_mutex_unlock(&(conn->mtx));
+	lockStatus = pthread_mutex_unlock(&(conn->mtx));
 	
 #ifdef DEBUG
 	__SBK_debug_udp_print_conn(conn->fd, &(conn->addr));
@@ -172,8 +173,18 @@ sbk_udp_recv(SbkConnection  *conn,
 			 const size_t   recvSize)
 {
 	socklen_t addrlen = sizeof(struct sockaddr_in);
+	int lockStatus;
 
-	pthread_mutex_trylock(&(conn->mtx));
+	lockStatus = pthread_mutex_trylock(&(conn->mtx));
+	
+	if (lockStatus != 0) {
+#ifdef DEBUG
+		printf("!! Failed to acquire socket lock\n"
+						"!! errno: %d\n",
+						lockStatus);
+#endif
+		return -1;
+	}
 	
 	recvfrom(conn->fd, buf, recvSize, 0,
 			 (struct sockaddr *) &(conn->addr), &addrlen);

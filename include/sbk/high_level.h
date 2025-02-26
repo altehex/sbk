@@ -110,7 +110,6 @@ typedef struct __PACKED {
 
 void __SBK_debug_print_high_fb(const SbkHighFb *);
 void __SBK_debug_print_high_ctrl(const SbkHighCtrl *);
-void __SBK_debug_print_high_ctrl_packet(const SbkHighCtrl *);
 
 
 #endif // !__SBK_HIGH_LEVEL_H

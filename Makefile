@@ -1,6 +1,6 @@
 SRC = crc.c high_level.c joint.c low_level.c safety.c syncio.c udp.c
 
-EXAMPLE_SRC = walk.c position.c raw.c pushup.c
+EXAMPLE_SRC = walk.c position.c raw_low.c raw_high.c pushup.c
 
 CC  = gcc
 AR  = ar

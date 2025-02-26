@@ -28,25 +28,30 @@ __SBK_debug_print_motor_ctrl(SbkMotorCtrl *fb)
 }
 
 
-void
-__SBK_debug_print_motor_fb(SbkMotorHighFb *fb)
-{
-	const char *fmt =
-		"mode<%zu>:\n"
-		"q<%zu>:\n"
-		"dq<%zu>:\n"
-		"ddq<%zu>:\n"
-		"etau<%zu>:\n"
-		"t<%zu>:\n"
-		"total size: %d\n";
+const char
+*__SBK_motorFbFmt = 
+			"mode<%zu>:n" 
+			"q<%zu>:n" 
+			"dq<%zu>:n" 
+			"ddq<%zu>:n" 
+			"etau<%zu>:n" 
+			"t<%zu>:n" 
+			"total size: %dn"; 
 
-	printf(fmt,
-		   offsetof(SbkMotorHighFb, mode),
-		   offsetof(SbkMotorHighFb, q),
-		   offsetof(SbkMotorHighFb, dq),
-		   offsetof(SbkMotorHighFb, ddq),
-		   offsetof(SbkMotorHighFb, etau),
-		   offsetof(SbkMotorHighFb, t),
-		   sizeof(SbkMotorHighFb)
-		   );
-}
+#define __SBK_DEFINE_print_motor_fb(LEVEL) \
+	void \
+    __SBK_debug_print_motor_##LEVEL##_fb(SbkMotor##LEVEL##Fb *fb) \
+	{ \
+		printf(__SBK_motorFbFmt, \
+			   offsetof(SbkMotor##LEVEL##Fb, mode), \
+			   offsetof(SbkMotor##LEVEL##Fb, q), \
+			   offsetof(SbkMotor##LEVEL##Fb, dq), \
+			   offsetof(SbkMotor##LEVEL##Fb, ddq), \
+			   offsetof(SbkMotor##LEVEL##Fb, etau), \
+			   offsetof(SbkMotor##LEVEL##Fb, t), \
+			   sizeof(SbkMotor##LEVEL##Fb) \
+			   ); \
+	}
+
+__SBK_DEFINE_print_motor_fb(High) 
+__SBK_DEFINE_print_motor_fb(Low)
