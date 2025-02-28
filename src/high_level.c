@@ -1,6 +1,7 @@
 #include <sbk/high_level.h>
 
 #include <sbk/syncio.h>
+#include <sbk/udp.h>
 
 #include <stddef.h>
 
@@ -9,7 +10,7 @@ void
 __SBK_debug_print_high_fb(const SbkHighFb *fb)
 {
 	const char *fmt =
-		"head<%zu>:         %x %x\n"
+		"head<%zu>:         %x\n"
 		"levelFlag<%zu>:    %d\n"
 		"serialNumber<%zu>: %x %x\n"
 		"imu<%zu>:\n"
@@ -22,18 +23,18 @@ __SBK_debug_print_high_fb(const SbkHighFb *fb)
 		"footHeight<%zu>:\n"
 		"pos<%zu>:\n"
 		"bodyHeight<%zu>: %f\n"
-		"velocity<%zu>:\n"
-		"yawSpeed<%zu>:\n"
-		"rangeObstacle<%zu>:\n"
-		"footPos2body<%zu>:\n"
-		"footSpeed2body<%zu>:\n"
-		"wirelessremote<%zu>:\n"
-		"crc<%zu>:\n"
+		/* "velocity<%zu>:\n" */
+		/* "yawSpeed<%zu>:\n" */
+		/* "rangeObstacle<%zu>:\n" */
+		/* "footPos2body<%zu>:\n" */
+		/* "footSpeed2body<%zu>:\n" */
+		/* "wirelessremote<%zu>:\n" */
+		/* "crc<%zu>:\n" */
 		"SbkHighFb size: %d\n"
 		;
 
 	sbk_sync_printf(fmt,
-		   offsetof(SbkHighFb, head), fb->head[0], fb->head[1],
+		   offsetof(SbkHighFb, head), fb->head,
 		   offsetof(SbkHighFb, levelFlag), fb->levelFlag,
 		   offsetof(SbkHighFb, serialNumber), fb->serialNumber[0], fb->serialNumber[1],
 		   offsetof(SbkHighFb, imu),
@@ -98,4 +99,9 @@ __SBK_debug_print_high_ctrl(const SbkHighCtrl *ctrl)
 }
 
 
-
+void
+sbk_init_high_ctrl(SbkHighCtrl *ctrl)
+{
+	ctrl->head = SBK_UDP_MSG_HEADER;
+	ctrl->levelFlag = SBK_UDP_HIGH_LEVEL_CONN;
+}

@@ -1,6 +1,7 @@
 #include <sbk/low_level.h>
 
 #include <sbk/syncio.h>
+#include <sbk/udp.h>
 
 #include <stddef.h>
 
@@ -9,7 +10,7 @@ void
 __SBK_debug_print_low_fb(const SbkLowFb *fb)
 {
 	const char *fmt =
-		"head<%zu>: %x %x\n"
+		"head<%zu>: %x\n"
 		"levelFlag<%zu>: %d\n"
 		"serialNumber<%zu>: %d %d\n"
 		"imu<%zu>:\n"
@@ -22,7 +23,7 @@ __SBK_debug_print_low_fb(const SbkLowFb *fb)
 		"joystick<%zu>:\n";
 
 	printf(fmt,
-		   offsetof(SbkLowFb, head), fb->head[0], fb->head[1],
+		   offsetof(SbkLowFb, head), fb->head,
 		   offsetof(SbkLowFb, levelFlag), fb->levelFlag,
 		   offsetof(SbkLowFb, serialNumber), fb->serialNumber[0], fb->serialNumber[1],
 		   offsetof(SbkLowFb, imu),
@@ -54,4 +55,12 @@ __SBK_debug_print_low_ctrl(const SbkLowCtrl *ctrl)
 		   offsetof(SbkLowCtrl, joint),
 		   offsetof(SbkLowCtrl, bms)
 		   );
+}
+
+
+void
+sbk_init_low_ctrl(SbkLowCtrl *ctrl)
+{
+	ctrl->head = SBK_UDP_MSG_HEADER;
+	ctrl->levelFlag = SBK_UDP_LOW_LEVEL_CONN;
 }

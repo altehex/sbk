@@ -20,17 +20,18 @@ control(void *args)
 	
 	conn = ((CtrlArgs *) args)->conn;
 
-	ctrl.head[0] = 0xFE;
-	ctrl.head[1] = 0xEF;
-	ctrl.levelFlag = 0;
+	sbk_init_high_ctrl(&ctrl);
 
 	time = 0;
 	
 	while (1) {
 		usleep(1000000);
 		++time;
-
-		ctrl.mode = SBK_MODE_STAND_DOWN^(time&1);
+		
+		if (time & 1)
+			ctrl.mode = SBK_MODE_STAND_UP;
+		else
+			ctrl.mode = SBK_MODE_STAND_DOWN;
 
 		sbk_sync_printf("[ CTRL(%ld) ] ---------------------\n"
 				   "mode:        %d\n"
@@ -39,7 +40,7 @@ control(void *args)
 				   syscall(__NR_gettid), ctrl.mode,
 				   time);
 		
-		sbk_udp_send(conn, (uint8_t *) (&ctrl), sizeof(SbkHighCtrl));
+		sbk_udp_send(conn, (uint8_t *) (&ctrl));
 	} // while (1)
 	
 	return NULL;
@@ -54,7 +55,8 @@ main()
 	SbkConnection conn;
 	CtrlArgs ctrlArgs = {0};
 
-	if (sbk_udp_open(SBK_UDP_HIGH_LEVEL_CONN, &conn, false, 0) < 0) {
+	if (sbk_udp_open(SBK_UDP_HIGH_LEVEL_CONN, &conn, false,
+					 SOCK_NONBLOCK, false) < 0) {
 		sbk_sync_printf("Exiting...\n");
 		return -1;
 	};
@@ -63,8 +65,8 @@ main()
 	pthread_create(&ctrlt, NULL, control, (void *) &ctrlArgs);
 
 	while (1) if (getc(stdin) == '\n') break;
-
 	sbk_sync_printf("Exiting...\n");
+
 	pthread_cancel(ctrlt);
 	sbk_udp_close(&conn);
 	

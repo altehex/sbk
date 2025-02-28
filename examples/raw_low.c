@@ -26,8 +26,7 @@ main(void)
 	inet_pton(AF_INET, "192.168.123.10", &addr.sin_addr);
 	
 	ctrl.levelFlag = 0xFF;
-	ctrl.head[0] = 0xFE;
-	ctrl.head[1] = 0xEF;
+	ctrl.head = 0xFEEF;
 	ctrl.bandwidth = 0xC03A;
 	for (int i = 0; i < 20; ++i)
 		ctrl.joint[i].mode = SBK_MOTOR_SERVO;

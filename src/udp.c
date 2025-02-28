@@ -50,25 +50,32 @@ __SBK_debug_udp_print_conn(const int fd,
 }
 
 ssize_t
-sbk_udp_open(SbkConnType    type,
+sbk_udp_open(const uint8_t  level,
 			 SbkConnection  *conn,
 			 const bool     encode,
-			 const int      socketType)
+			 const int      socketType,
+			 const bool     useWifi)
 {
-	uint8_t      emptyMsg[sizeof(SbkLowCtrl)];
+	SbkLowCtrl   emptyMsg = {0};
 	u_short      port;
-	int          msgSize, qLen, fd;
+	int          sendSize, recvSize, qLen, fd;
 	in_addr_t    addr;
 	char         addrStr[INET_ADDRSTRLEN];
 
-	if (type == SBK_UDP_LOW_LEVEL_CONN) {
-		msgSize = sizeof(SbkLowCtrl);
-		port    = SBK_UDP_LOW_LEVEL_PORT;
-		addr    = SBK_MCU_ADDR;
+	if (level == SBK_UDP_LOW_LEVEL_CONN) {
+		sendSize = sizeof(SbkLowCtrl);
+		recvSize = sizeof(SbkLowFb);
+		port     = SBK_UDP_LOW_LEVEL_PORT;
+		addr     = SBK_MCU_ADDR;
 	} else {
-		msgSize  = sizeof(SbkHighCtrl);
+		sendSize = sizeof(SbkHighCtrl);
+		recvSize = sizeof(SbkHighFb);
 		port     = SBK_UDP_HIGH_LEVEL_PORT;
-		addr     = SBK_PI_ADDR;
+
+		if (useWifi)
+			addr = SBK_PI_WIFI_ADDR;
+		else
+			addr = SBK_PI_ADDR;
 	}
 
 	// Set up SbkConnection instance	
@@ -83,8 +90,9 @@ sbk_udp_open(SbkConnType    type,
 	conn->addr.sin_port        = htons(port);
 	conn->addr.sin_family      = AF_INET;
 
-	conn->fd      = fd;
-	conn->msgSize = msgSize;
+	conn->fd       = fd;
+	conn->sendSize = sendSize;
+	conn->recvSize = recvSize;
 	pthread_mutex_init(&(conn->mtx), NULL);
 
 	// TO-DO: test if low level can be accessed with
@@ -109,17 +117,18 @@ sbk_udp_open(SbkConnType    type,
 #ifdef DEBUG
 	__SBK_debug_udp_print_conn(fd, &(conn->addr));
 #endif
+
+	emptyMsg.levelFlag = level;
+	emptyMsg.head      = SBK_UDP_MSG_HEADER;
 	
 	// Initialize the connecion by sending an empty command
-	memset(emptyMsg, 0, msgSize);
-
 #ifdef DEBUG
-	ssize_t bytesSent = sbk_udp_send(conn, emptyMsg, msgSize);
+	ssize_t bytesSent = sbk_udp_send(conn, (uint8_t *) &emptyMsg);
 	sbk_sync_puts("-- Iniitalized connection");
 	return bytesSent;
 #endif
 	
-	return sbk_udp_send(conn, emptyMsg, msgSize);
+	return sbk_udp_send(conn, (uint8_t *) &emptyMsg);
 }
 
 
@@ -131,27 +140,28 @@ sbk_udp_close(SbkConnection  *conn)
 
 
 ssize_t
-sbk_udp_send(SbkConnection  *conn,
-			 uint8_t        *data,
-			 const size_t   size)
+__SBK_udp_send(SbkConnection  *conn,
+	  		   uint8_t        *data)
 {
 	ssize_t bytesSent;
 	int lockStatus;
+	int sendSize;
 
-	data[size-4] = conn->gen_code((uint32_t *)data, size);
+	sendSize = conn->sendSize;
+	*((uint32_t *) &(data[sendSize-4])) = conn->gen_code((uint32_t *)data, sendSize);
 	
 	lockStatus = pthread_mutex_trylock(&(conn->mtx));
 	
 	if (lockStatus != 0) {
 #ifdef DEBUG
 		printf("!! Failed to acquire socket lock\n"
-						"!! errno: %d\n",
-						lockStatus);
+			   "!! errno: %d\n",
+			   lockStatus);
 #endif
 		return -1;
 	}
 	
-	bytesSent = sendto(conn->fd, data, size, 0,
+	bytesSent = sendto(conn->fd, data, sendSize, 0,
 					   (struct sockaddr *) &(conn->addr),
 					   sizeof(struct sockaddr_in));
 
@@ -159,8 +169,9 @@ sbk_udp_send(SbkConnection  *conn,
 	
 #ifdef DEBUG
 	__SBK_debug_udp_print_conn(conn->fd, &(conn->addr));
+	sbk_print_raw_msg(data, sendSize);
 	sbk_sync_printf("-- Bytes sent: %ld (intended: %ld)\n",
-					bytesSent, size);
+					bytesSent, sendSize);
 #endif
 	
 	return bytesSent;
@@ -168,9 +179,8 @@ sbk_udp_send(SbkConnection  *conn,
 
 
 ssize_t
-sbk_udp_recv(SbkConnection  *conn,
-			 void           *buf,
-			 const size_t   recvSize)
+__SBK_udp_recv(SbkConnection  *conn,
+			   void           *buf)
 {
 	socklen_t addrlen = sizeof(struct sockaddr_in);
 	int lockStatus;
@@ -186,7 +196,7 @@ sbk_udp_recv(SbkConnection  *conn,
 		return -1;
 	}
 	
-	recvfrom(conn->fd, buf, recvSize, 0,
+	recvfrom(conn->fd, buf, conn->recvSize, 0,
 			 (struct sockaddr *) &(conn->addr), &addrlen);
 
 	pthread_mutex_unlock(&(conn->mtx));

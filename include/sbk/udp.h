@@ -8,14 +8,14 @@
 #include <sys/socket.h>
 
 
-#define SBK_UDP_LISTEN_PORT     8090
-#define SBK_UDP_HIGH_LEVEL_PORT 8082
-#define SBK_UDP_LOW_LEVEL_PORT  8007
+#define SBK_UDP_MSG_HEADER 0xEFFE
 
-typedef enum {
-	SBK_UDP_HIGH_LEVEL_CONN,
-	SBK_UDP_LOW_LEVEL_CONN
-} SbkConnType;
+#define SBK_UDP_LISTEN_PORT      8090
+#define SBK_UDP_HIGH_LEVEL_PORT  8082
+#define SBK_UDP_LOW_LEVEL_PORT   8007
+
+#define SBK_UDP_HIGH_LEVEL_CONN  0x00
+#define SBK_UDP_LOW_LEVEL_CONN   0xFF
 
 #define SBK_OCTETS_TO_ADDR(a, b, c, d) \
 	(   ( (d&0xFF) << 24 ) \
@@ -23,29 +23,38 @@ typedef enum {
       | ( (b&0xFF) << 8 )  \
       |   (a&0xFF)         )
 
-#define SBK_MCU_ADDR  ((in_addr_t) SBK_OCTETS_TO_ADDR(192,168,123,10))
-#define SBK_PI_ADDR   ((in_addr_t) SBK_OCTETS_TO_ADDR(192,168,123,161))
+#define SBK_PI_WIFI_ADDR  ((in_addr_t) SBK_OCTETS_TO_ADDR(192,168,12,1))
+#define SBK_MCU_ADDR      ((in_addr_t) SBK_OCTETS_TO_ADDR(192,168,123,10))
+#define SBK_PI_ADDR       ((in_addr_t) SBK_OCTETS_TO_ADDR(192,168,123,161))
 
 
 typedef struct {
 	int                 fd;
 	struct sockaddr_in  addr;
 	pthread_mutex_t     mtx;
-	size_t              msgSize;
+	size_t              sendSize;
+	size_t              recvSize;
 	uint32_t (*gen_code)(const uint32_t *, size_t);
 } SbkConnection;
 
 
-ssize_t
-sbk_udp_open(SbkConnType type, SbkConnection *conn, const bool encode, const int socketType);
+ssize_t sbk_udp_open(const uint8_t type, SbkConnection *conn, const bool encode, const int socketType, const bool useWifi);
 void sbk_udp_close(SbkConnection *conn);
-ssize_t sbk_udp_send(SbkConnection * sock, uint8_t *data, const size_t size);
-ssize_t sbk_udp_recv(SbkConnection *conn, void *buf, const size_t recvSize);
+
+ssize_t __SBK_udp_send(SbkConnection *, uint8_t *);
+
+#define sbk_udp_send(CONN, ADDR) \
+	__SBK_udp_send(CONN, (uint8_t *) ADDR)
+
+ssize_t __SBK_udp_recv(SbkConnection *, void *);
+
+#define sbk_udp_recv(CONN, ADDR) \
+	__SBK_udp_recv(CONN, (void *) ADDR)
 
 void __SBK_print_raw_msg(const uint8_t *, const size_t);
 
-#define sbk_print_raw_msg(BYTES, SIZE) \
-	__SBK_print_raw_msg((uint8_t *) BYTES, SIZE)
+#define sbk_print_raw_msg(ADDR, SIZE) \
+	__SBK_print_raw_msg((uint8_t *) ADDR, SIZE)
 
 
 #if 0

@@ -16,7 +16,7 @@
 
 
 typedef struct __PACKED {
-	uint8_t      head[2];
+	uint16_t     head;
 	uint8_t      levelFlag;
 	uint8_t      _frameReserve;
 	uint32_t     serialNumber[2];
@@ -42,7 +42,7 @@ typedef struct __PACKED {
 
 
 typedef struct __PACKED {
-	uint8_t      head[2];
+	uint16_t     head;
 	uint8_t      levelFlag;
 	uint8_t      _frameReserve;
 	uint32_t     serialNumber[2];
@@ -106,5 +106,6 @@ typedef struct __PACKED {
 void __SBK_debug_print_low_fb(const SbkLowFb *);
 void __SBK_debug_print_low_ctrl(const SbkLowCtrl *);
 
+void sbk_init_low_ctrl(SbkLowCtrl *ctrl);
 
 #endif // !__SBK_LOW_LEVEL_H
