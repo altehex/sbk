@@ -121,8 +121,8 @@ main()
 	SbkConnection conn;
 	CtrlArgs ctrlArgs = {0};
 
-	if (sbk_udp_open(SBK_UDP_HIGH_LEVEL_CONN, &conn, false,
-					 SOCK_NONBLOCK, true) < 0) {
+	if (sbk_udp_open(SBK_UDP_HIGH_LEVEL_CONN, false, true,
+					 SOCK_NONBLOCK, &conn) < 0) {
 		sbk_sync_printf("Exiting...\n");
 		return -1;
 	};

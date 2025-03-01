@@ -58,9 +58,11 @@ __SBK_debug_print_low_ctrl(const SbkLowCtrl *ctrl)
 }
 
 
-void
+int
 sbk_init_low_ctrl(SbkLowCtrl *ctrl)
 {
+	if ( ! ctrl) return -1;
+	
 	ctrl->head = SBK_UDP_MSG_HEADER;
 	ctrl->levelFlag = SBK_UDP_LOW_LEVEL_CONN;
 }

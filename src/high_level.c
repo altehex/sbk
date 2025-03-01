@@ -99,9 +99,11 @@ __SBK_debug_print_high_ctrl(const SbkHighCtrl *ctrl)
 }
 
 
-void
+int
 sbk_init_high_ctrl(SbkHighCtrl *ctrl)
 {
+	if ( ! ctrl) return -1;
+	
 	ctrl->head = SBK_UDP_MSG_HEADER;
 	ctrl->levelFlag = SBK_UDP_HIGH_LEVEL_CONN;
 }

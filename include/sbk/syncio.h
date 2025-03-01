@@ -10,12 +10,6 @@
 extern atomic_flag __SBK_stdoutLock;
 
 
-typedef enum {
-	NO_SYNC,
-	SYNC
-} SbkEnableSync;
-
-
 #define sbk_sync_printf(FMT, ...) \
 	if ( ! atomic_flag_test_and_set_explicit(&__SBK_stdoutLock, \
 											 memory_order_acquire)) { \
@@ -24,6 +18,13 @@ typedef enum {
 								   memory_order_release); \
 	}
 
+
+/**
+  @brief sbk_sync_puts
+  @param[in] str The string to output
+  
+  A thread safe puts() wrapper
+ */
 
 static inline void
 sbk_sync_puts(const char *str)

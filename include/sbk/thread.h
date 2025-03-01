@@ -5,6 +5,8 @@
 #include <pthread.h>
 
 
+// TBD, may be removed
+
 typedef struct {
 	pthread_t   t;
 	SbkMsgQueue *msgQueue;

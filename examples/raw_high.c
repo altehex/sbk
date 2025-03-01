@@ -1,4 +1,7 @@
+#ifndef DEBUG
 #define DEBUG
+#endif
+
 #include <sbk/sbk.h>
 
 #include <fcntl.h>
@@ -43,7 +46,6 @@ main(void)
 	__SBK_debug_print_motor_high_fb(&(fb.joint[FR_CALF]));
 	__SBK_debug_print_high_fb(&fb);
 	__SBK_debug_print_high_ctrl(&ctrl);
-	printf("bms size: %d\n", sizeof(SbkBmsFb));
 	
 	int t = 0;
 	

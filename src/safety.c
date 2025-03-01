@@ -5,27 +5,27 @@
 
 
 void
-position_protect(SbkLowCtrl  *ctrl,
-				 SbkLeg      leg)
+sbk_position_protect(SbkLeg      leg,
+					 SbkLowCtrl  *ctrl)
 {
 	float hipq, thighq, calfq;
 
-	hipq   = ctrl->joint[leg+0].q;
-	thighq = ctrl->joint[leg+1].q;
-	calfq  = ctrl->joint[leg+2].q;
+	hipq   = ctrl->joint[leg+HIP].q;
+	thighq = ctrl->joint[leg+THIGH].q;
+	calfq  = ctrl->joint[leg+CALF].q;
 
 	if (SBK_HIP_MIN > hipq)
-		ctrl->joint[leg+0].q = SBK_HIP_MIN;
+		ctrl->joint[leg+HIP].q = SBK_HIP_MIN;
 	else if (SBK_HIP_MAX < hipq)
-		ctrl->joint[leg+0].q = SBK_HIP_MAX;
+		ctrl->joint[leg+HIP].q = SBK_HIP_MAX;
 
 	if (SBK_THIGH_MIN > thighq)
-		ctrl->joint[leg+1].q = SBK_THIGH_MIN;
+		ctrl->joint[leg+THIGH].q = SBK_THIGH_MIN;
 	else if (SBK_THIGH_MAX < thighq)
-		ctrl->joint[leg+1].q = SBK_THIGH_MAX;
+		ctrl->joint[leg+THIGH].q = SBK_THIGH_MAX;
 
 	if (SBK_CALF_MIN > calfq)
-		ctrl->joint[leg+2].q = SBK_CALF_MIN;
+		ctrl->joint[leg+CALF].q = SBK_CALF_MIN;
 	else if (SBK_CALF_MAX < calfq)
-		ctrl->joint[leg+2].q = SBK_CALF_MAX;
+		ctrl->joint[leg+CALF].q = SBK_CALF_MAX;
 }

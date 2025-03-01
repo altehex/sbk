@@ -25,6 +25,7 @@ typedef struct __PACKED {
 #define SBK_BMS_SELF_DISCHARGE  0x07
 #define SBK_BMS_JUNK            0x08
 
+
 typedef struct __PACKED {
 	uint8_t  version[2];
 	uint8_t  status;
@@ -45,7 +46,7 @@ typedef struct __PACKED {
 	int8_t   bqNtc[2];    // [Co]
 	int8_t   mcuNtc[2];   // [Co]
 	uint8_t voltage[10]; // [mV]
-} SbkBmsFb;
+} SbkBmsLowFb;
 
 
 #endif // !__SBK_BMS_H

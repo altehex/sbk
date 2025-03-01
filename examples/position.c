@@ -1,6 +1,6 @@
 #include <sbk/sbk.h>
 
-#include <cmath>
+#include <math.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -58,10 +58,10 @@ control(void *args)
 		if (TIMESTAMP(11, 400)) {
 			rate = (rateCount++)/200.0;
 
-			for (int joint = FR_HIP; leg <= FR_CALF; ++leg)
+			/* for (int joint = FR_HIP; joint <= FR_CALF; ++leg) */
 				
 			
-			position_protect(&ctrl, FR);
+			sbk_position_protect(FR, &ctrl);
 
 		}
 		if (TIMESTAMP(401, 600)) {
@@ -87,7 +87,8 @@ main()
 	SbkConnection conn;
 	CtrlArgs ctrlArgs = {0};
 
-	if (sbk_udp_open(SBK_UDP_LOW_LEVEL_CONN, &conn, false, SOCK_NONBLOCK, true) < 0) {
+	if (sbk_udp_open(SBK_UDP_LOW_LEVEL_CONN, false,
+					 true, SOCK_NONBLOCK, &conn) < 0) {
 		sbk_sync_printf("Exiting...\n");
 		return -1;
 	};

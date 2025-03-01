@@ -3,11 +3,9 @@
 #include <stddef.h>
 
 
-#include <stdio.h>
-
 uint32_t
-__SBK_gen_crc(const uint32_t  *struc,
-			  const size_t   sz)
+__SBK_gen_crc(const uint32_t  *msg,
+			  const size_t    sz)
 {
 	uint32_t crc, x;
 
@@ -18,21 +16,19 @@ __SBK_gen_crc(const uint32_t  *struc,
 			x = (crc>>31) & 1;
 			crc <<= 1;
 			crc &= 0xFFFFFFFF;
-			if (x ^ (1 & (struc[i] >> (31-b))))
+			if (x ^ (1 & (msg[i] >> (31-b))))
 				crc ^= 0x04c11db7;
 		}
 
-	printf("CRC: %x\n", crc);
-	
 	return crc;
 }
 
 
 uint32_t
-__SBK_gen_crc_encode(const uint32_t *struc,
-						const size_t   sz)
+__SBK_gen_crc_encode(const uint32_t *msg,
+					 const size_t   sz)
 {
-	uint32_t crc = __SBK_gen_crc(struc, sz) ^ 0xEDCAB9DE;
+	uint32_t crc = __SBK_gen_crc(msg, sz) ^ 0xEDCAB9DE;
 
 	return (crc & 0xFF) << 24
 		 | (crc & 0xFF00) >> 8

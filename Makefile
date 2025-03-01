@@ -6,8 +6,11 @@ CC  = gcc
 AR  = ar
 SCP = scp
 
-CFLAGS = -O3 -Wall -Iinclude
-LDFLAGS = -Wl,--gc-sections
+CFLAGS = -O3 -Wall -Iinclude \
+		 -fdata-sections \
+		 -ffunction-sections
+LDFLAGS = -Wl,--gc-sections \
+          -Lbuild
 
 ifeq (1, $(DEBUG))
 	CFLAGS += -g -DDEBUG
@@ -17,6 +20,7 @@ LIBS = -lsbk -lc -lm -lpthread
 
 
 all: build build/libsbk.a examples
+
 
 build:
 	mkdir -p build/examples
@@ -28,7 +32,7 @@ examples: $(foreach EX,$(EXAMPLE_SRC:%.c=%),build/examples/$(EX))
 
 build/examples/%: examples/%.c
 	$(CC) $(CFLAGS) -c $^ -o $(^:%.c=%.o)
-	$(CC) $(LDFLAGS) -Lbuild $(^:%.c=%.o) -o $@ $(LIBS)
+	$(CC) $(LDFLAGS) $(^:%.c=%.o) -o $@ $(LIBS)
 
 build/%.o: src/%.c
 	$(CC) $(CFLAGS) -c $^ -o $@

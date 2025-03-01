@@ -11,9 +11,6 @@
 #include <sbk/udp.h>
 
 
-#define SBK_HIGH_LEVEL_UDP_PORT 8082
-
-
 typedef enum {
 	SBK_GAIT_IDLE,
 	SBK_GAIT_TROT,
@@ -111,7 +108,16 @@ typedef struct __PACKED {
 void __SBK_debug_print_high_fb(const SbkHighFb *);
 void __SBK_debug_print_high_ctrl(const SbkHighCtrl *);
 
-void sbk_init_high_ctrl(SbkHighCtrl *ctrl);
+/**
+   @brief sbk_init_high_ctrl
+
+   @param[in, out] ctrl A pointer to the allocated SbkHighCtrl buffer
+   @return Returns -1 if ctrl is NULL
+
+   Initializes the SbkHighCtrl instance
+ */
+
+int sbk_init_high_ctrl(SbkHighCtrl *ctrl);
 
 
 #endif // !__SBK_HIGH_LEVEL_H

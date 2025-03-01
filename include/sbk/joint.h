@@ -24,6 +24,10 @@ typedef enum {
 } SbkLeg;
 
 typedef enum {
+	HIP, THIGH, CALF
+} SbkJointIndex;
+
+typedef enum {
 	FR_HIP, FR_THIGH, FR_CALF,
 	FL_HIP, FL_THIGH, FL_CALF,
 	RR_HIP, RR_THIGH, RR_CALF,

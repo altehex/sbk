@@ -12,9 +12,6 @@
 #include <stdint.h>
 
 
-#define SBK_LOW_LEVEL 0xFF
-
-
 typedef struct __PACKED {
 	uint16_t     head;
 	uint8_t      levelFlag;
@@ -23,9 +20,9 @@ typedef struct __PACKED {
 	uint32_t     version[2];
 	uint16_t     bandwidth;
 	
-	SbkImu       imu;
-	SbkMotorLowFb   joint[20];
-	SbkBmsFb     bms;
+	SbkImu        imu;
+	SbkMotorLowFb joint[20];
+	SbkBmsLowFb   bms;
 
 	int16_t      footForce[4];
 
@@ -106,6 +103,16 @@ typedef struct __PACKED {
 void __SBK_debug_print_low_fb(const SbkLowFb *);
 void __SBK_debug_print_low_ctrl(const SbkLowCtrl *);
 
-void sbk_init_low_ctrl(SbkLowCtrl *ctrl);
+/**
+   @brief sbk_init_low_ctrl
+
+   @param[in, out] ctrl A pointer to the allocated SbkLowCtrl buffer
+   @return Returns -1 if ctrl is NULL
+
+   Initializes the SbkLowCtrl instance
+ */
+
+int sbk_init_low_ctrl(SbkLowCtrl *ctrl);
+
 
 #endif // !__SBK_LOW_LEVEL_H
