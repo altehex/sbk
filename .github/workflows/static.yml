@@ -29,9 +29,6 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Doxygen GitHub Pages Deploy Action 
-        uses: DenverCoder1/doxygen-github-pages-action@v2.0.0
-  
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Pages
