@@ -1,5 +1,7 @@
 #include <sbk/crc.h>
 
+#include <sbk/macro.h>
+
 #include <stddef.h>
 
 
@@ -17,7 +19,7 @@ __SBK_gen_crc(const uint32_t  *msg,
 			crc <<= 1;
 			crc &= 0xFFFFFFFF;
 			if (x ^ (1 & (msg[i] >> (31-b))))
-				crc ^= 0x04c11db7;
+				crc ^= 0x04C11DB7;
 		}
 
 	return crc;
@@ -29,9 +31,5 @@ __SBK_gen_crc_encode(const uint32_t *msg,
 					 const size_t   sz)
 {
 	uint32_t crc = __SBK_gen_crc(msg, sz) ^ 0xEDCAB9DE;
-
-	return (crc & 0xFF) << 24
-		 | (crc & 0xFF00) >> 8
-		 | (crc & 0xFF0000) >> 8
-		 | (crc & 0xFF000000) >> 8;
+	return ROR(crc, 8);
 }

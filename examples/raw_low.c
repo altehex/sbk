@@ -23,12 +23,17 @@ main(void)
 	__SBK_debug_print_low_fb(&fb);
 	__SBK_debug_print_low_ctrl(&ctrl);
 	
+	// float conversion test;
+	printf("tau conv: %04X\n", sbk_tauf_to_tau16(0.65));
+	printf("kp conv: %04X\n", sbk_kpf_to_kp16(20.));
+	printf("kp conv: %04X\n", sbk_kdf_to_kd16(2.));
+
 	addr.sin_family = AF_INET;
 	addr.sin_port   = htons(8007);
 	inet_pton(AF_INET, "192.168.123.10", &addr.sin_addr);
 	
 	ctrl.levelFlag = 0xFF;
-	ctrl.head = 0xFEEF;
+	ctrl.head = 0xEFFE;
 	ctrl.bandwidth = 0xC03A;
 	for (int i = 0; i < 20; ++i)
 		ctrl.joint[i].mode = SBK_MOTOR_SERVO;

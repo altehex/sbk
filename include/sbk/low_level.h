@@ -60,48 +60,32 @@ typedef struct __PACKED {
 } SbkLowCtrl;
 
 
-/* static inline uint16_t __PURE */
-/* to_tau16(const float ftau) */
-/* { */
-/* 	uint16_t f, i; */
+/**
+   @brief Converts the 32-bit float tau (torque) value to 16-bit float
 
-/* 	i = (uint16_t) round(ftau); */
-/* 	f = ((uint16_t) (ftau-(float) i))<<8; */
+   @param[in] tauf Torque of float type
+   @return Torque of uint16_t type
+ */
 
-/* 	if (ftau < 0) { */
-/* 		i += 255; */
-/* 		f += 256; */
-/* 	} */
-	
-/* 	return i + f; */
-/* } */
+__PURE uint16_t sbk_tauf_to_tau16(const float tauf);
 
+/**
+   @brief Converts the 32-bit float kp (position stiffness) value to 16-bit float
 
-/* static inline uint16_t __PURE */
-/* to_kp16(const float fkp) */
-/* { */
-/* 	uint16_t f, i, v; */
+   @param[in] kpf Position stiffness of float type
+   @return Position stiffness of uint16_t type
+ */
 
-/* 	i = (uint16_t) round(fkp); */
-/* 	f = (uint16_t) (fkp-(float) i); */
-/* 	f = f<<3 + f<<1; // f *= 10 */
+__PURE uint16_t sbk_kpf_to_kp16(const float kpf);
 
-/* 	v = f % ( f < 5 */
-/* 	        ? (i << 5) + 3*f */
-/* 	        : (i << 5) + 3*(f-1) + 4 ); */
+/**
+   @brief Converts the 32-bit float kd (velocity stiffness) value to 16-bit float
 
-/* 	return ((v & 0xFF) << 8) | ((v & 0xFF00) >> 8); */
-/* } */
+   @param[in] kdf Velocity stiffness of float type
+   @return Velocity stiffness of uint16_t type
+ */
 
-
-/* static inline uint16_t __PURE */
-/* to_kd16(const float fkd) */
-/* { */
-/* 	uint16_t f, i; */
-
-/* 	i = (uint16_t) round(fkd); */
-/* 	f = (uint16_t) (fkp-(float) i); */
-/* } */
+__PURE uint16_t sbk_kdf_to_kd16(const float kdf);
 
 
 void __SBK_debug_print_low_fb(const SbkLowFb *);

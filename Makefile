@@ -2,9 +2,15 @@ SRC = crc.c high_level.c joint.c low_level.c safety.c syncio.c udp.c
 
 EXAMPLE_SRC = walk.c position.c raw_low.c raw_high.c pushup.c
 
-CC  = gcc
-AR  = ar
+
+ifeq (1, $(ARM))
+	PREFIX = arm-none-eabi
+endif
+
+CC = $(PREFIX)-gcc
+AR = $(PREFIX)-ar
 SCP = scp
+
 
 CFLAGS = -O3 -Wall -Iinclude \
 		 -fdata-sections \

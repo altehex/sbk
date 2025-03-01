@@ -17,6 +17,6 @@ Use the `send` target to copy the repo to your connected Go1.
 
 You can either use the github pages instance or set it up locally:
 ```bash
-$ doxygen doxygen.conf
+$ doxygen
 $ <browser_of_choice> docs/html/index.html
 ```
