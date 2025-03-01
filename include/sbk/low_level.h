@@ -1,3 +1,8 @@
+/**
+   @file
+   @brief Low Level communication function and structure definitions
+  */
+
 #ifndef __SBK_LOW_LEVEL_H
 #define __SBK_LOW_LEVEL_H
 
@@ -8,7 +13,6 @@
 #include <sbk/macro.h>
 #include <sbk/pos.h>
 
-#include <math.h>
 #include <stdint.h>
 
 
@@ -104,12 +108,10 @@ void __SBK_debug_print_low_fb(const SbkLowFb *);
 void __SBK_debug_print_low_ctrl(const SbkLowCtrl *);
 
 /**
-   @brief sbk_init_low_ctrl
+   @brief Initializes the SbkLowCtrl instance
 
    @param[in, out] ctrl A pointer to the allocated SbkLowCtrl buffer
    @return Returns -1 if ctrl is NULL
-
-   Initializes the SbkLowCtrl instance
  */
 
 int sbk_init_low_ctrl(SbkLowCtrl *ctrl);

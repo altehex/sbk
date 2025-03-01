@@ -49,3 +49,5 @@ clean:
 	rm -f examples/*~
 	rm -f src/*~
 	rm -f include/sbk/*~
+
+	rm -rf html/ latex/

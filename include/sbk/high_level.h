@@ -1,3 +1,9 @@
+/**
+   @file
+   @brief High Level communication function and structure definitions
+  */
+
+
 #ifndef __SBK_HIGH_LEVEL_H
 #define __SBK_HIGH_LEVEL_H
 
@@ -109,12 +115,10 @@ void __SBK_debug_print_high_fb(const SbkHighFb *);
 void __SBK_debug_print_high_ctrl(const SbkHighCtrl *);
 
 /**
-   @brief sbk_init_high_ctrl
+   @brief Initializes the SbkHighCtrl instance
 
    @param[in, out] ctrl A pointer to the allocated SbkHighCtrl buffer
    @return Returns -1 if ctrl is NULL
-
-   Initializes the SbkHighCtrl instance
  */
 
 int sbk_init_high_ctrl(SbkHighCtrl *ctrl);

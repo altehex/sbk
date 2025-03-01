@@ -1,3 +1,8 @@
+/**
+   @file
+   @brief UDP communication function definitions
+  */
+
 #ifndef __SBK_UDP_H
 #define __SBK_UDP_H
 
@@ -42,7 +47,7 @@ typedef struct {
 
 
 /**
-  @brief sbk_udp_open
+  @brief Establishes UDP connection corresponding to either low or high level communication.
   
   @param[in]  level       Communication level (SBK_UDP_HIGH_LEVEL_CONN or SBK_UDP_LOW_LEVEL_CONN)
   @param[in]  encode      Whether the messages are encoded when sent (encoding refers to applying the so-called encryption algorithm by the Unitree devs, see sbk_gen_crc_encoded())
@@ -50,8 +55,6 @@ typedef struct {
   @param[in]  socketType  The socket flags, which are applied on socket() function call
   @param[out] conn        SbkConnection instance address to save settings to
   @return The size of the initialization message (which is just an empty control (command) message). If an error occurs, it returns -1 (check the errno)
-
-  Establishes UDP connection corresponding to either low or high level communication.
 
   Example:
   @code
@@ -69,11 +72,10 @@ typedef struct {
 ssize_t sbk_udp_open(const uint8_t type, const bool encode, const bool useWifi, const int socketType, SbkConnection *conn);
 
 /**
-  @brief sbk_udp_close
+  @brief Closes the UDP socket (thread-safe)
   @details It'a good idea to inline this function as it should be called once for every SbkConnection instance and there's usually not so many of them
-  @param[in] conn The connection to close
 
-  Closes the UDP socket (thread-safe)
+  @param[in] conn The connection to close
  */
 
 static inline __INLINE void
@@ -90,47 +92,38 @@ sbk_udp_close(SbkConnection *conn)
 }
 
 /**
-  @brief __SBK_udp_send
+  @brief Sends a message via SbkConnection (thread-safe)  
   @details Although this function is marked with __SBK_ prefix, it's not intrinsic and is thread safe. However, it is recommended to use the sbk_udp_send macro to resolve the pointer type of the message source address
   
   @param[in]      conn SbkConnection instance
   @param[in, out] data The data to be sent, usually a control (command) message. Marked as out as the function also calculates the CRC of the message in advance
   @return The total length of sent bytes. Returns -1 on error (check the errno)
-
-  Sends a message via SbkConnection (thread-safe)
  */
-
 ssize_t __SBK_udp_send(SbkConnection *conn, uint8_t *data);
 
 #define sbk_udp_send(CONN, ADDR) \
 	__SBK_udp_send(CONN, (uint8_t *) ADDR)
 
 /**
-  @brief __SBK_udp_recv
+  @brief Receives a message via SbkConnection (thread-safe)
   @details Although this function is marked with __SBK_ prefix, it's not intrinsic and is thread safe. However, it is recommended to use the sbk_udp_recv macro to resolve the pointer type of the destination buffer address
   
   @param[in]  conn SbkConnection instance
   @param[out] buf  
   @return The total length of sent bytes. Returns -1 on error (check the errno)
-
-  Receives a message via SbkConnection (thread-safe)
  */
-
 ssize_t __SBK_udp_recv(SbkConnection *conn, void *buf);
 
 #define sbk_udp_recv(CONN, ADDR) \
 	__SBK_udp_recv(CONN, (void *) ADDR)
 
 /**
-  @brief __SBK_print_raw_msg
+  @brief Outputs the raw bytes of the message (thread-safe)
   @details Although this function is marked with __SBK_ prefix, it's not intrinsic and is thread safe. However, it is recommended to use the sbk_print_raw_msg macro to resolve the pointer type of the message source address
   
   @param[in] bytes  Message source address
   @param[in] size   Size of the message (can be resolved through SbkConnection.size too)
-
-  Outputs the raw bytes of the message (thread-safe)
  */
-
 void __SBK_print_raw_msg(const uint8_t *, const size_t);
 
 #define sbk_print_raw_msg(ADDR, SIZE) \
