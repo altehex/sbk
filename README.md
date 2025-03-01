@@ -13,6 +13,7 @@ $ DEBUG=1 make
 Use the `send` target to copy the repo to your connected Go1.
 
 ## Doxygen documentation viewing
+You can either use the github pages instance or set it up locally:
 ```bash
 $ doxygen doxygen.conf
 $ <browser_of_choice> html/index.html
