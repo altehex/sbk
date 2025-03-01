@@ -40,9 +40,6 @@ jobs:
       - name: Install Graphviz
         run: sudo apt install graphviz
 
-      - name: Install LaTeX
-        run: sudo apt install texlive-full
-
       - name: Create documentation     
         run: doxygen doxygen.conf
         
