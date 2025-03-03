@@ -64,13 +64,14 @@ __SBK_debug_print_low_ctrl(const SbkLowCtrl *ctrl)
 int
 sbk_init_low_ctrl(SbkLowCtrl *ctrl)
 {
-	SbkMotorCtrl *joints;
-	
 	if ( ! ctrl) return -1;
 	
 	ctrl->head = SBK_UDP_MSG_HEADER;
 	ctrl->levelFlag = SBK_UDP_LOW_LEVEL_CONN;
+	ctrl->bandwidth = SBK_LOW_LEVEL_BANDWIDTH;
 
 	sbk_motors_init(ctrl->joint);
+
+	return 0;
 }
 

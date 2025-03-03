@@ -28,14 +28,16 @@ void *
 control(void *args)
 {
 	const float FREQ_RAD = 1*2*3.24,
-		        DT = 0.004;
+		        DT = 0.002;
 	
 	SbkConnection  *conn;
 	SbkLowCtrl     ctrl = {0};
 	SbkLowFb       fb;
 	unsigned       time, rateCount, sinCount;
-	float          qInit[3], qDes[3], rate, t,
-	               sinMidQ[3] = { 0.0, 1.2, -2.0 };
+	float          qInit[3]   = { 0, 0, 0 },
+		           qDes[3]    = { 0, 0, 0 },
+	               sinMidQ[3] = { 0.0, 1.2, -2.0 },
+		           rate, t;
 	
 	conn = ((CtrlArgs *) args)->conn;
 
@@ -49,13 +51,14 @@ control(void *args)
 	time = 0;
 	rate = 0;
 	sinCount = 0;
-	
+	rateCount = 0;
+
 	while (1) {
-		usleep(4000);
+		usleep(2000);
 		sbk_sync_printf("Time: %d\n", time);
 
 		sbk_udp_recv(conn, &fb);	
-		
+
 		if (TIMESTAMP(1, 10)) {
 			qInit[HIP]   = fb.joint[FR_HIP].q;
 			qInit[THIGH] = fb.joint[FR_THIGH].q;
@@ -67,7 +70,7 @@ control(void *args)
 			continue;
 		}
 		else if (TIMESTAMP(11, 400)) {
-			rate = (rateCount++)/200.0;
+			rate = (++rateCount)/200.0;
 
 			for (int joint = FR_HIP; joint <= FR_CALF; ++joint) 
 				qDes[joint] = joint_linear_interpolation(qInit[joint], sinMidQ[joint], rate);
@@ -82,6 +85,7 @@ control(void *args)
 			time = 0;
 			rate = 0;
 			sinCount = 0;
+			rateCount = 0;
 			continue;
 		}
 

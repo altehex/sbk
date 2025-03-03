@@ -16,6 +16,9 @@
 #include <stdint.h>
 
 
+#define SBK_LOW_LEVEL_BANDWIDTH 0xC03A
+
+
 typedef struct __PACKED {
 	uint16_t     head;
 	uint8_t      levelFlag;

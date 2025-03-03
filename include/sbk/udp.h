@@ -18,7 +18,6 @@
 
 #define SBK_UDP_MSG_HEADER 0xEFFE
 
-#define SBK_UDP_LISTEN_PORT      8090
 #define SBK_UDP_HIGH_LEVEL_PORT  8082
 #define SBK_UDP_LOW_LEVEL_PORT   8007
 
@@ -38,11 +37,11 @@
 
 typedef struct {
 	int                 fd;
+	uint32_t            (*gen_code)(const uint32_t *, const size_t);
 	size_t              sendSize;
 	size_t              recvSize;
 	struct sockaddr_in  addr;
 	atomic_flag         lock;
-	uint32_t            (*gen_code)(const uint32_t *, const size_t);
 } SbkConnection;
 
 

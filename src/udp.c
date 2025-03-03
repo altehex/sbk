@@ -47,24 +47,29 @@ sbk_udp_open(const uint8_t  level,
 	u_short      port;
 	int          sendSize, recvSize, fd;
 	in_addr_t    addr;
+	uint32_t     (*gen_code)(const uint32_t *, const size_t);
 
 	if (level == SBK_UDP_LOW_LEVEL_CONN) {
 		sendSize = sizeof(SbkLowCtrl);
 		recvSize = sizeof(SbkLowFb);
 		port     = SBK_UDP_LOW_LEVEL_PORT;
 		addr     = SBK_MCU_ADDR;
+		gen_code = __SBK_gen_crc_encode;
+		
 	} else {
 		sendSize = sizeof(SbkHighCtrl);
 		recvSize = sizeof(SbkHighFb);
 		port     = SBK_UDP_HIGH_LEVEL_PORT;
-
-		addr = useWifi ? SBK_PI_WIFI_ADDR : SBK_PI_ADDR;
+		addr     = useWifi ? SBK_PI_WIFI_ADDR : SBK_PI_ADDR;
+		gen_code = encode ? __SBK_gen_crc_encode
+		                  : __SBK_gen_crc;
 	}
 
 	// Set up SbkConnection instance	
 	fd = socket(AF_INET, SOCK_DGRAM | socketType, 0);
 
 	conn->fd       = fd;
+	conn->gen_code = gen_code;
 	conn->sendSize = sendSize;
 	conn->recvSize = recvSize;
 	
@@ -74,14 +79,13 @@ sbk_udp_open(const uint8_t  level,
 
 	atomic_flag_clear(&(conn->lock));
 
-	// TO-DO: test if low level can be accessed with
-	//        decoded crc
-	conn->gen_code = encode ? __SBK_gen_crc_encode
-		                    : __SBK_gen_crc;
-
 	// Initialize the connecion by sending an empty command
 	emptyMsg.levelFlag = level;
 	emptyMsg.head      = SBK_UDP_MSG_HEADER;
+	if (level == SBK_UDP_LOW_LEVEL_CONN)
+		emptyMsg.bandwidth = SBK_LOW_LEVEL_BANDWIDTH;
+
+	((uint8_t *) &emptyMsg)[sendSize-4] = gen_code((uint32_t *) &emptyMsg, sendSize);
 		
 	return sbk_udp_send(conn, (uint8_t *) &emptyMsg);
 }
@@ -126,6 +130,7 @@ __SBK_udp_recv(SbkConnection  *conn,
 			   void           *buf)
 {
 	socklen_t addrlen;
+	ssize_t recieved;
 	atomic_flag *lock;
 
 	addrlen = sizeof(struct sockaddr_in);
@@ -138,17 +143,17 @@ __SBK_udp_recv(SbkConnection  *conn,
 		return -1;
 	}
 	
-	recvfrom(conn->fd, buf, conn->recvSize, 0,
-			 (struct sockaddr *) &(conn->addr), &addrlen);
+	recieved = recvfrom(conn->fd, buf, conn->recvSize, 0,
+						(struct sockaddr *) &(conn->addr), &addrlen);
 
 	atomic_flag_clear_explicit(lock, memory_order_release);
 
 #ifdef DEBUG
-	sbk_sync_printf("-- Received bytes: %d (intended: %ld)\n",
-					addrlen, conn->recvSize);
+	sbk_sync_printf("-- Received bytes: %ld (intended: %ld)\n",
+					recieved, conn->recvSize);
 #endif
 	
-	return addrlen;
+	return recieved;
 }
 
 

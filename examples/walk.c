@@ -27,7 +27,9 @@ feedback(void *args)
 		usleep(1000000);
 		++time;
 
-		sbk_udp_recv(conn, &fb);
+		while (sbk_udp_recv(conn, &fb) == -1)
+			continue;
+		
 		__SBK_debug_print_high_fb(&fb);
 	}
 }

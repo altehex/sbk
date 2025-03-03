@@ -3,14 +3,8 @@ SRC = crc.c high_level.c joint.c low_level.c safety.c syncio.c udp.c
 EXAMPLE_SRC = walk.c position.c pushup.c
 
 
-ifeq (1, $(ARM))
-	CC = arm-linux-gnueabi-gcc
-	AR = arm-linux-gnueabi-ar
-else
-	CC = x86_64-linux-gnu-gcc
-	AR = x86_64-linux-gnu-gcc-ar
-endif
-
+CC  = gcc
+AR  = ar
 SCP = scp
 
 

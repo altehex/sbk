@@ -106,4 +106,6 @@ sbk_init_high_ctrl(SbkHighCtrl *ctrl)
 	
 	ctrl->head = SBK_UDP_MSG_HEADER;
 	ctrl->levelFlag = SBK_UDP_HIGH_LEVEL_CONN;
+
+	return 0;
 }
