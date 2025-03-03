@@ -38,7 +38,7 @@ typedef struct __PACKED {
 
 	uint32_t     _r2;
 
-	//uint32_t   crc;
+	uint32_t   crc;
 } SbkLowFb;
 
 
@@ -69,6 +69,14 @@ typedef struct __PACKED {
 
 __PURE uint16_t sbk_tauf_to_tau16(const float tauf);
 
+static inline void
+sbk_set_torque(const float   torquef,
+		       SbkJoint      joint,
+		       SbkLowCtrl    *ctrl)
+{
+	ctrl->joint[joint].tau = sbk_tauf_to_tau16(torquef);
+}
+
 /**
    @brief Converts the 32-bit float kp (position stiffness) value to 16-bit float
 
@@ -78,6 +86,14 @@ __PURE uint16_t sbk_tauf_to_tau16(const float tauf);
 
 __PURE uint16_t sbk_kpf_to_kp16(const float kpf);
 
+static inline void
+sbk_set_kp(const float   kpf,
+	       SbkJoint      joint,
+	       SbkLowCtrl    *ctrl)
+{
+	ctrl->joint[joint].kp = sbk_kpf_to_kp16(kpf);
+}
+
 /**
    @brief Converts the 32-bit float kd (velocity stiffness) value to 16-bit float
 
@@ -86,6 +102,14 @@ __PURE uint16_t sbk_kpf_to_kp16(const float kpf);
  */
 
 __PURE uint16_t sbk_kdf_to_kd16(const float kdf);
+
+static inline void
+sbk_set_kd(const float   kdf,
+	       SbkJoint      joint,
+	       SbkLowCtrl    *ctrl)
+{
+	ctrl->joint[joint].kd = sbk_kdf_to_kd16(kdf);
+}
 
 
 void __SBK_debug_print_low_fb(const SbkLowFb *);

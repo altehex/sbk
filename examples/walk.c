@@ -1,10 +1,36 @@
 #include <sbk/sbk.h>
 
 #include <pthread.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/syscall.h>
+
+
+typedef struct {
+	SbkConnection *conn;
+} FbArgs;
+
+void *
+feedback(void *args)
+{
+	SbkConnection  *conn;
+	SbkHighFb      fb = {0};
+	unsigned       time;
+	
+	conn = ((FbArgs *) args)->conn;
+
+	time = 0;
+
+	while (1) {
+		usleep(1000000);
+		++time;
+
+		sbk_udp_recv(conn, &fb);
+		__SBK_debug_print_high_fb(&fb);
+	}
+}
 
 
 typedef struct {
@@ -117,11 +143,19 @@ int
 main()
 {
 	// ctrlt:  control thread
-	pthread_t ctrlt;
+	pthread_t ctrlt, fbt;
 	SbkConnection conn;
 	CtrlArgs ctrlArgs = {0};
+	FbArgs fbArgs = {0};
+	char useWifiYn;
+	bool useWifi;
 
-	if (sbk_udp_open(SBK_UDP_HIGH_LEVEL_CONN, false, true,
+	printf("Use wifi connection? (y/N): ");
+	useWifiYn = getc(stdin);
+	useWifi = useWifiYn == 'y' || useWifiYn == 'Y';
+	if (useWifiYn != '\n') getc(stdin);
+	
+	if (sbk_udp_open(SBK_UDP_HIGH_LEVEL_CONN, false, useWifi,
 					 SOCK_NONBLOCK, &conn) < 0) {
 		sbk_sync_printf("Exiting...\n");
 		return -1;
@@ -130,10 +164,14 @@ main()
 	ctrlArgs.conn = &conn;
 	pthread_create(&ctrlt, NULL, control, &ctrlArgs);
 
+	fbArgs.conn = &conn;
+	pthread_create(&fbt, NULL, feedback, &fbArgs);
+	
 	while (1) if (getc(stdin) == '\n') break;
 	sbk_sync_printf("Exiting...\n");
 
 	pthread_cancel(ctrlt);
+	pthread_cancel(fbt);
 	sbk_udp_close(&conn);
 	
 	return 0;

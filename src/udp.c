@@ -22,18 +22,17 @@ void
 __SBK_print_raw_msg(const uint8_t  *bytes,
 					const size_t   size)
 {
-	char    *msg;
+	char    msg[(sizeof(SbkHighFb)<<1) + 1]; // Using SbkHighFb as it has! the biggest size
 	size_t  strSize;
 
 	strSize = size<<1;
-	msg = (char *) malloc(strSize);
 	
 	for (int i = 0; i < strSize; i += 2)
 		sprintf(&(msg[i]), "%02X", bytes[i>>1]);
 
+	msg[strSize] = '\0';
+	
 	sbk_sync_printf("%s\n", msg);
-
-	free(msg);
 }
 
 
@@ -145,7 +144,8 @@ __SBK_udp_recv(SbkConnection  *conn,
 	atomic_flag_clear_explicit(lock, memory_order_release);
 
 #ifdef DEBUG
-	sbk_sync_printf("-- Received bytes: %d\n", addrlen);
+	sbk_sync_printf("-- Received bytes: %d (intended: %ld)\n",
+					addrlen, conn->recvSize);
 #endif
 	
 	return addrlen;

@@ -1,5 +1,6 @@
 #include <sbk/low_level.h>
 
+#include <sbk/joint.h>
 #include <sbk/macro.h>
 #include <sbk/syncio.h>
 #include <sbk/udp.h>
@@ -63,10 +64,17 @@ __SBK_debug_print_low_ctrl(const SbkLowCtrl *ctrl)
 int
 sbk_init_low_ctrl(SbkLowCtrl *ctrl)
 {
+	SbkMotorCtrl *joints;
+	
 	if ( ! ctrl) return -1;
 	
 	ctrl->head = SBK_UDP_MSG_HEADER;
 	ctrl->levelFlag = SBK_UDP_LOW_LEVEL_CONN;
+
+	joints = ctrl->joint;
+	
+	for (int joint = 0; joint < JOINT_COUNT; ++joint)
+		joints[joint].mode = SBK_MOTOR_SERVO;
 }
 
 
@@ -95,7 +103,7 @@ sbk_kpf_to_kp16(const float kpf)
 	kpFrac = (uint16_t) ((kpf - (uint16_t) kpf) * 10);
 	kpInt = (uint16_t) kpf;
 
-	return kpInt<<5 + kpFrac + kpFrac + kpFrac + (kpFrac >= 5);	
+	return (kpInt<<5) + kpFrac+kpFrac+kpFrac + (kpFrac >= 5);	
 }
 
 
@@ -107,5 +115,5 @@ sbk_kdf_to_kd16(const float kdf)
 	kdFrac = (uint16_t) ((kdf - (uint16_t) kdf) * 16);
 	kdInt = (uint16_t) kdf;
 
-	return kdFrac | (kdInt << 4);
+	return kdFrac | (kdInt<<4);
 }

@@ -11,13 +11,14 @@
 float
 joint_linear_interpolation(const float init,
 						   const float target,
-						   const float rate) {
+						   const float rate)
+{
 	return init*(1-rate) + target*rate;
 }
 
 
 #define TIMESTAMP(S, E) \
-	0 <= time || time <= E
+	S <= ++time && time <= E
 
 typedef struct {
 	SbkConnection *conn;
@@ -26,52 +27,73 @@ typedef struct {
 void *
 control(void *args)
 {
+	const float FREQ_RAD = 1*2*3.24,
+		        DT = 0.004;
+	
 	SbkConnection  *conn;
 	SbkLowCtrl     ctrl = {0};
 	SbkLowFb       fb;
-	unsigned       time;
-	float          qInit[3], qDest[3], rate;
-	int            rateCount;
+	unsigned       time, rateCount, sinCount;
+	float          qInit[3], qDes[3], rate, t,
+	               sinMidQ[3] = { 0.0, 1.2, -2.0 };
 	
 	conn = ((CtrlArgs *) args)->conn;
 
 	sbk_init_low_ctrl(&ctrl);
+	sbk_set_torque(-0.65, FR_HIP, &ctrl);
+	for (int joint = FR_HIP; joint <= FR_CALF; ++joint) {
+		sbk_set_kp(5, joint, &ctrl);
+		sbk_set_kd(1, joint, &ctrl);
+	}
 	
 	time = 0;
 	rate = 0;
+	sinCount = 0;
 	
 	while (1) {
-		usleep(2000);
-		++time;
-		
-		sbk_udp_recv(conn, &fb);
-		__SBK_debug_print_low_fb(&fb);
+		usleep(4000);
+		sbk_sync_printf("Time: %d\n", time);
+
+		sbk_udp_recv(conn, &fb);	
 		
 		if (TIMESTAMP(1, 10)) {
-			qInit[FR_HIP]   = fb.joint[FR_HIP].q;
-			qInit[FR_THIGH] = fb.joint[FR_THIGH].q;
-			qInit[FR_CALF]  = fb.joint[FR_CALF].q;
+			qInit[HIP]   = fb.joint[FR_HIP].q;
+			qInit[THIGH] = fb.joint[FR_THIGH].q;
+			qInit[CALF]  = fb.joint[FR_CALF].q;
+
 			sbk_sync_printf("qInit: %f %f %f\n",
-							qInit[FR_HIP], qInit[FR_THIGH], qInit[FR_CALF]);
+							qInit[HIP], qInit[THIGH], qInit[CALF]);
+
 			continue;
 		}
-		if (TIMESTAMP(11, 400)) {
+		else if (TIMESTAMP(11, 400)) {
 			rate = (rateCount++)/200.0;
 
-			/* for (int joint = FR_HIP; joint <= FR_CALF; ++leg) */
-				
-			
-			sbk_position_protect(FR, &ctrl);
-
+			for (int joint = FR_HIP; joint <= FR_CALF; ++joint) 
+				qDes[joint] = joint_linear_interpolation(qInit[joint], sinMidQ[joint], rate);
 		}
-		if (TIMESTAMP(401, 600)) {
+		else if (TIMESTAMP(401, 100000)) {
+			t = DT*(++sinCount);
 
+			qDes[HIP]   = sinMidQ[HIP];
+			qDes[THIGH] = sinMidQ[THIGH] + 0.6*sin(t*FREQ_RAD);
+			qDes[CALF]  = sinMidQ[CALF] - 0.9*sin(t*FREQ_RAD);
 		}
 		else {
 			time = 0;
 			rate = 0;
+			sinCount = 0;
+			continue;
 		}
-		
+
+		sbk_sync_printf("qDes: %f %f %f\n",
+						qDes[HIP], qDes[THIGH], qDes[CALF]);
+
+		ctrl.joint[FR_HIP].q   = qDes[HIP];
+		ctrl.joint[FR_THIGH].q = qDes[THIGH];
+		ctrl.joint[FR_CALF].q  = qDes[CALF];
+
+		sbk_position_protect(FR, &ctrl);
 		sbk_udp_send(conn, &ctrl);
 	}
 	
@@ -88,7 +110,7 @@ main()
 	CtrlArgs ctrlArgs = {0};
 
 	if (sbk_udp_open(SBK_UDP_LOW_LEVEL_CONN, false,
-					 true, SOCK_NONBLOCK, &conn) < 0) {
+					 false, SOCK_NONBLOCK, &conn) < 0) {
 		sbk_sync_printf("Exiting...\n");
 		return -1;
 	};

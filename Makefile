@@ -4,11 +4,13 @@ EXAMPLE_SRC = walk.c position.c raw_low.c raw_high.c pushup.c
 
 
 ifeq (1, $(ARM))
-	PREFIX = arm-none-eabi
+	CC = arm-linux-gnueabi-gcc
+	AR = arm-linux-gnueabi-ar
+else
+	CC = x86_64-linux-gnu-gcc
+	AR = x86_64-linux-gnu-gcc-ar
 endif
 
-CC = $(PREFIX)-gcc
-AR = $(PREFIX)-ar
 SCP = scp
 
 
