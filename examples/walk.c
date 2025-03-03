@@ -160,7 +160,7 @@ main()
 		sbk_sync_printf("Exiting...\n");
 		return -1;
 	};
-	
+
 	ctrlArgs.conn = &conn;
 	pthread_create(&ctrlt, NULL, control, &ctrlArgs);
 

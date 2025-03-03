@@ -14,9 +14,12 @@
 #define SBK_THIGH_MAX   (2.966f)
 #define SBK_THIGH_MIN   (-0.663f)
 
-#define SBK_MOTOR_SERVO    0x0A
-#define SBK_MOTOR_DAMPING  0x00
-#define SBK_MOTOR_OVERHEAT 0x08
+#define SBK_POS_STOP  (2.146E+9f)
+#define SBK_VEL_STOP  (16000.f)
+
+#define SBK_MOTOR_SERVO     0x0A
+#define SBK_MOTOR_DAMPING   0x00
+#define SBK_MOTOR_OVERHEAT  0x08
 
 
 typedef enum {
@@ -32,7 +35,7 @@ typedef enum {
 	FL_HIP, FL_THIGH, FL_CALF,
 	RR_HIP, RR_THIGH, RR_CALF,
 	RL_HIP, RL_THIGH, RL_CALF,
-	JOINT_COUNT
+	SBK_JOINT_COUNT
 } SbkJoint;
 
 
@@ -71,6 +74,41 @@ typedef struct __PACKED {
 	uint16_t    kd;   // velocity stiffness [N*m/(rad/s)]
 	uint32_t _r[3];  // reserved
 } SbkMotorCtrl;
+
+
+/**
+   @brief Converts the 32-bit float tau (torque) value to 16-bit float
+
+   @param[in] tauf Torque of float type
+   @return Torque of uint16_t type
+ */
+
+__PURE uint16_t sbk_tauf_to_tau16(const float tauf);
+
+/**
+   @brief Converts the 32-bit float kp (position stiffness) value to 16-bit float
+
+   @param[in] kpf Position stiffness of float type
+   @return Position stiffness of uint16_t type
+ */
+
+__PURE uint16_t sbk_kpf_to_kp16(const float kpf);
+
+/**
+   @brief Converts the 32-bit float kd (velocity stiffness) value to 16-bit float
+
+   @param[in] kdf Velocity stiffness of float type
+   @return Velocity stiffness of uint16_t type
+ */
+
+__PURE uint16_t sbk_kdf_to_kd16(const float kdf);
+
+/**
+   @brief Motor cotnrol structure initialization
+
+   @param[out] joints Array of 12 motor control structures
+ */
+void sbk_motors_init(SbkMotorCtrl *joints);
 
 
 #ifdef DEBUG

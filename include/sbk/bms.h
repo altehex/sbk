@@ -7,15 +7,15 @@
 #include <stdint.h>
 
 
-#define SBK_BMS_OFF
+#define SBK_BMS_OFF 
 
 typedef struct __PACKED {
-	uint8_t  off;  // set to SBK_BMS_OFF to turn off the battery
-	uint8_t  _r[3];
+	uint8_t  off;   /// set to SBK_BMS_OFF to turn off the battery
+	uint8_t  _r[3]; /// 
 } SbkBmsCtrl;
 
 
-#define SBK_BMS_WAKEUP          0x00
+#define SBK_BMS_WAKEUP          0x00 /// 
 #define SBK_BMS_DISCHARGE       0x01
 #define SBK_BMS_CHARGE          0x02
 #define SBK_BMS_CHARGER         0x03

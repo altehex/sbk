@@ -75,7 +75,6 @@ control(void *args)
 		else if (TIMESTAMP(401, 100000)) {
 			t = DT*(++sinCount);
 
-			qDes[HIP]   = sinMidQ[HIP];
 			qDes[THIGH] = sinMidQ[THIGH] + 0.6*sin(t*FREQ_RAD);
 			qDes[CALF]  = sinMidQ[CALF] - 0.9*sin(t*FREQ_RAD);
 		}
