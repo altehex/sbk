@@ -69,6 +69,14 @@ typedef struct __PACKED {
 
 __PURE uint16_t sbk_tauf_to_tau16(const float tauf);
 
+/**
+   @brief Torque (tau) setter for low level control message
+
+   @param[in]  torquef Torque of float type
+   @param[in]  joint   Joint index (see SbkJoint in joint.h)
+   @param[out] ctrl    Control message where tau is set
+  */
+
 static inline void
 sbk_set_torque(const float   torquef,
 		       SbkJoint      joint,
@@ -86,6 +94,14 @@ sbk_set_torque(const float   torquef,
 
 __PURE uint16_t sbk_kpf_to_kp16(const float kpf);
 
+/**
+   @brief Position stiffness (kp) setter for low level control message
+
+   @param[in]  kpf   Position stiffness of float type
+   @param[in]  joint Joint index (see SbkJoint in joint.h)
+   @param[out] ctrl  Control message where kp is set
+  */
+
 static inline void
 sbk_set_kp(const float   kpf,
 	       SbkJoint      joint,
@@ -102,6 +118,14 @@ sbk_set_kp(const float   kpf,
  */
 
 __PURE uint16_t sbk_kdf_to_kd16(const float kdf);
+
+/**
+   @brief Velocity stiffness (kd) setter for low level control message
+
+   @param[in]  kdf   Velocity stiffness of float type
+   @param[in]  joint Joint index (see SbkJoint in joint.h)
+   @param[out] ctrl  Control message where kd is set
+  */
 
 static inline void
 sbk_set_kd(const float   kdf,

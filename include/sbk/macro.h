@@ -27,33 +27,7 @@
 #endif
 
 
-#define ROR(X, R)								\
-	(X >> R) | (X << (32-R))	  
-
-
-#if defined (ARCH_X86)
-
-#   define SWAP16(X) __builtin_bswap16(X)
-
-#elif defined (__ARM_ARCH_7A__) || defined (__ARM_ARCH_7__)
-
-static inline uint32_t
-REV16(uint32_t x)
-{
-	register uint32_t y;
-
-	__asm__ __volatile__ ("rev16 %0, %1" : "=r"(y) : "y"(x));
-
-	return y;
-}
-
-#   define SWAP16(X) (uint16_t) REV16((uint32_t) X)
-	
-#else
-
-#   define SWAP16(X) ((X & 0xFF) << 8) | ((X & 0xFF00) >> 8)
-
-#endif // SWAP16
+#define ROR(X, R) (X >> R) | (X << (32-R))	  
 
 
 #endif // !__SBK_MACRO_H

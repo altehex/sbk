@@ -10,6 +10,11 @@
 extern atomic_flag __SBK_stdoutLock;
 
 
+/**
+   @def A thread safe printf() wrapper
+
+   @param FMT string format
+  */
 #define sbk_sync_printf(FMT, ...) \
 	if ( ! atomic_flag_test_and_set_explicit(&__SBK_stdoutLock, \
 											 memory_order_acquire)) { \
@@ -20,10 +25,9 @@ extern atomic_flag __SBK_stdoutLock;
 
 
 /**
-  @brief sbk_sync_puts
-  @param[in] str The string to output
+  @brief A thread safe puts() wrapper
   
-  A thread safe puts() wrapper
+  @param[in] str The string to output
  */
 
 static inline void

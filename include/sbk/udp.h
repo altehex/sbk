@@ -101,6 +101,10 @@ sbk_udp_close(SbkConnection *conn)
  */
 ssize_t __SBK_udp_send(SbkConnection *conn, uint8_t *data);
 
+/**
+   @def Sends a message via SbkConnection (__SBK_udp_send() wrapper)
+ */
+
 #define sbk_udp_send(CONN, ADDR) \
 	__SBK_udp_send(CONN, (uint8_t *) ADDR)
 
@@ -114,6 +118,10 @@ ssize_t __SBK_udp_send(SbkConnection *conn, uint8_t *data);
  */
 ssize_t __SBK_udp_recv(SbkConnection *conn, void *buf);
 
+/**
+   @def Receives a message via SbkConnection (__SBK_udp_recv() wrapper)
+ */
+
 #define sbk_udp_recv(CONN, ADDR) \
 	__SBK_udp_recv(CONN, (void *) ADDR)
 
@@ -124,7 +132,12 @@ ssize_t __SBK_udp_recv(SbkConnection *conn, void *buf);
   @param[in] bytes  Message source address
   @param[in] size   Size of the message (can be resolved through SbkConnection.size too)
  */
+
 void __SBK_print_raw_msg(const uint8_t *, const size_t);
+
+/**
+   @def Outputs the raw bytes of the message (__SBK_print_raw_msg() wrapper)
+ */
 
 #define sbk_print_raw_msg(ADDR, SIZE) \
 	__SBK_print_raw_msg((uint8_t *) ADDR, SIZE)
